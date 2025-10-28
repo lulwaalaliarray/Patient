@@ -146,22 +146,14 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({
                   flexDirection: isMobile ? 'column' : 'row'
                 }}>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     size="small"
-                    onClick={() => window.open(`/doctors/${doctor.userId}`, '_blank')}
+                    startIcon={<CalendarIcon />}
+                    onClick={handleViewProfile}
+                    disabled={!doctor.isAcceptingPatients || doctor.licenseVerificationStatus !== 'verified'}
                   >
-                    View Profile
+                    Book an Appointment
                   </Button>
-                  {doctor.isAcceptingPatients && doctor.licenseVerificationStatus === 'verified' && (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<CalendarIcon />}
-                      onClick={handleBookAppointment}
-                    >
-                      Book Appointment
-                    </Button>
-                  )}
                 </Box>
               </Box>
             </Box>

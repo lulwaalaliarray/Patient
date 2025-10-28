@@ -97,7 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
                 justifyContent: 'center'
               }}>
                 <svg width="28" height="28" fill="white" viewBox="0 0 24 24">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-4v-4h4v4zm0-6h-4V7h4v4z"/>
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-4v-4h4v4zm0-6h-4V7h4v4z" />
                 </svg>
               </div>
               <div>
@@ -123,9 +123,9 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
           </Link>
 
           {/* Centered Navigation Links */}
-          <nav style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <nav style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '32px',
             position: 'absolute',
             left: '50%',
@@ -149,6 +149,24 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
             >
               Home
             </Link>
+            <Link
+              to={routes.about}
+              style={{
+                color: '#6b7280',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#0d9488';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#6b7280';
+              }}
+            >
+              About
+            </Link>
             {user && (
               <>
                 <Link
@@ -167,10 +185,10 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
                     e.currentTarget.style.color = '#6b7280';
                   }}
                 >
-                  {user && user.userType === 'doctor' ? 'Past Patients' : 'Dashboard'}
+                  Dashboard
                 </Link>
                 <Link
-                  to={user.userType === 'doctor' ? routes.appointments : routes.doctors}
+                  to={routes.doctors}
                   style={{
                     color: '#6b7280',
                     textDecoration: 'none',
@@ -185,28 +203,28 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
                     e.currentTarget.style.color = '#6b7280';
                   }}
                 >
-                  {user.userType === 'doctor' ? 'Upcoming Appointments' : 'Find Doctors'}
+                  Find Doctors
+                </Link>
+                <Link
+                  to={routes.appointments}
+                  style={{
+                    color: '#6b7280',
+                    textDecoration: 'none',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#0d9488';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#6b7280';
+                  }}
+                >
+                  My Appointments
                 </Link>
               </>
             )}
-            <Link
-              to={user && user.userType === 'doctor' ? routes.blog : routes.about}
-              style={{
-                color: '#6b7280',
-                textDecoration: 'none',
-                fontSize: '16px',
-                fontWeight: '500',
-                transition: 'color 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#0d9488';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#6b7280';
-              }}
-            >
-              {user && user.userType === 'doctor' ? 'Blog' : 'About'}
-            </Link>
             <Link
               to={routes.contact}
               style={{
@@ -312,7 +330,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
                     title="Open menu"
                   >
                     <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7 10l5 5 5-5z"/>
+                      <path d="M7 10l5 5 5-5z" />
                     </svg>
                   </button>
                 </div>
@@ -471,7 +489,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title, subtitle }) => {
 
       {/* Footer */}
       <Footer />
-      
+
       {/* Back to Top Button */}
       <BackToTopButton />
     </div>

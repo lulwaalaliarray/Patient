@@ -263,29 +263,6 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
           style={{
             flex: 1,
             padding: '12px',
-            backgroundColor: 'white',
-            color: '#0d9488',
-            border: '2px solid #0d9488',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#ecfdf5';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'white';
-          }}
-        >
-          View Profile
-        </button>
-        <button
-          onClick={() => onBookAppointment(doctor.id)}
-          style={{
-            flex: 1,
-            padding: '12px',
             background: isUserLoggedIn 
               ? 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)'
               : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
@@ -311,7 +288,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
           }}
         >
           {isUserLoggedIn 
-            ? (doctor.status === 'active' ? 'Book Now' : 'Schedule')
+            ? 'Book an Appointment'
             : 'Sign In to Book'
           }
         </button>
