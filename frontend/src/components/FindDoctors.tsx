@@ -6,6 +6,403 @@ import { userStorage, User } from '../utils/userStorage';
 import Header from './Header';
 import Footer from './Footer';
 import DoctorCard from './DoctorCard';
+import BookAppointmentDemo from './BookAppointmentDemo';
+import { reviewStorage } from '../utils/reviewStorage';
+
+// Create a unified doctor type for both registered and mock doctors
+type UnifiedDoctor = User & {
+  specialty?: string;
+  experience?: number | string;
+  rating?: number;
+  reviewCount?: number;
+  fee?: number;
+  isOnline?: boolean;
+  nextAvailable?: string;
+  languages?: string[];
+  education?: string;
+  hospital?: string;
+  coordinates?: { lat: number; lng: number };
+  address?: string;
+};
+
+// Doctor Details Modal Component
+interface DoctorDetailsModalProps {
+  doctor: UnifiedDoctor;
+  onClose: () => void;
+  onBookAppointment: (doctorId: string) => void;
+  isUserLoggedIn: boolean;
+}
+
+const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({ 
+  doctor, 
+  onClose, 
+  onBookAppointment, 
+  isUserLoggedIn 
+}) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
+  
+  // Get doctor reviews
+  const doctorReviews = reviewStorage.getDoctorReviews(doctor.id);
+  const averageRating = doctorReviews.length > 0 
+    ? doctorReviews.reduce((sum, review) => sum + review.rating, 0) / doctorReviews.length 
+    : 0; // Show 0 rating when no reviews exist
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, index) => (
+      <svg
+        key={index}
+        width="20"
+        height="20"
+        fill={index < Math.floor(rating) ? '#fbbf24' : '#e5e7eb'}
+        viewBox="0 0 20 20"
+      >
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    ));
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        maxWidth: '800px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        position: 'relative'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '24px',
+          borderBottom: '1px solid #e5e7eb',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start'
+        }}>
+          <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              backgroundColor: '#ecfdf5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <span style={{
+                color: '#0d9488',
+                fontWeight: '600',
+                fontSize: '24px'
+              }}>
+                {doctor.name.split(' ').map(n => n[0]).join('')}
+              </span>
+            </div>
+            
+            <div style={{ flex: 1 }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '4px'
+              }}>
+                {doctor.name}
+              </h2>
+              <p style={{
+                fontSize: '16px',
+                color: '#0d9488',
+                fontWeight: '500',
+                marginBottom: '8px'
+              }}>
+                {doctor.specialization || doctor.specialty}
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {renderStars(averageRating)}
+                </div>
+                <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500' }}>
+                  {averageRating.toFixed(1)}
+                </span>
+                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                  ({doctorReviews.length || doctor.reviewCount || 0} reviews)
+                </span>
+              </div>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280'
+              }}>
+                {doctor.hospital} • {doctor.location}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '24px',
+              cursor: 'pointer',
+              color: '#6b7280',
+              padding: '4px'
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #e5e7eb'
+        }}>
+          <button
+            onClick={() => setActiveTab('overview')}
+            style={{
+              padding: '16px 24px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              borderBottom: activeTab === 'overview' ? '2px solid #0d9488' : '2px solid transparent',
+              color: activeTab === 'overview' ? '#0d9488' : '#6b7280',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            style={{
+              padding: '16px 24px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              borderBottom: activeTab === 'reviews' ? '2px solid #0d9488' : '2px solid transparent',
+              color: activeTab === 'reviews' ? '#0d9488' : '#6b7280',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+          >
+            Reviews ({doctorReviews.length || doctor.reviewCount || 0})
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div style={{ padding: '24px' }}>
+          {activeTab === 'overview' && (
+            <div>
+              {/* Experience and Fee */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '24px'
+              }}>
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  padding: '16px',
+                  borderRadius: '8px'
+                }}>
+                  <h4 style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Experience</h4>
+                  <p style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                    {doctor.experience || '10+ years'}
+                  </p>
+                </div>
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  padding: '16px',
+                  borderRadius: '8px'
+                }}>
+                  <h4 style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Consultation Fee</h4>
+                  <p style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                    {doctor.consultationFee || doctor.fee || 25} BHD
+                  </p>
+                </div>
+              </div>
+
+              {/* Qualifications */}
+              {doctor.qualifications && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                    Qualifications
+                  </h4>
+                  <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
+                    {doctor.qualifications}
+                  </p>
+                </div>
+              )}
+
+              {/* Languages */}
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                  Languages
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {(doctor.languages || ['Arabic', 'English']).map((language, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        fontSize: '12px',
+                        backgroundColor: '#ecfdf5',
+                        color: '#059669',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        border: '1px solid #a7f3d0'
+                      }}
+                    >
+                      {language}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '8px' }}>
+                  Contact Information
+                </h4>
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  <p style={{ fontSize: '14px', color: '#374151' }}>
+                    <strong>Hospital:</strong> {doctor.hospital}
+                  </p>
+                  <p style={{ fontSize: '14px', color: '#374151' }}>
+                    <strong>Location:</strong> {doctor.location}
+                  </p>
+                  {doctor.address && (
+                    <p style={{ fontSize: '14px', color: '#374151' }}>
+                      <strong>Address:</strong> {doctor.address}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <div>
+              {doctorReviews.length > 0 ? (
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  {doctorReviews.map((review) => (
+                    <div
+                      key={review.id}
+                      style={{
+                        padding: '16px',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '8px'
+                      }}>
+                        <div>
+                          <p style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                            {review.patientName}
+                          </p>
+                          <div style={{ display: 'flex', gap: '2px', marginTop: '4px' }}>
+                            {renderStars(review.rating)}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                          {new Date(review.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
+                        {review.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <p style={{ fontSize: '16px', color: '#6b7280' }}>
+                    No reviews yet. Be the first to leave a review!
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '24px',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: '12px',
+          justifyContent: 'space-between'
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Doctors
+          </button>
+          
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {isUserLoggedIn && (
+              <button
+                onClick={() => {
+                  onBookAppointment(doctor.id);
+                  onClose();
+                }}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#0d9488',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M3 7h18l-2 13H5L3 7z" />
+                </svg>
+                Book Appointment
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FindDoctors: React.FC = () => {
   const navigate = useNavigate();
@@ -16,28 +413,104 @@ const FindDoctors: React.FC = () => {
   const [sortBy, setSortBy] = useState('rating');
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [doctors, setDoctors] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<{ id: string; name: string } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showDoctorDetails, setShowDoctorDetails] = useState(false);
+  const [selectedDoctorDetails, setSelectedDoctorDetails] = useState<UnifiedDoctor | null>(null);
+  
+  const DOCTORS_PER_PAGE = 15;
 
   // Check authentication status and load doctors
   useEffect(() => {
     setUserLoggedIn(isLoggedIn());
     loadDoctors();
+
+    // Listen for new doctor registrations
+    const handleDoctorRegistration = () => {
+      loadDoctors(); // Reload doctors when a new one registers
+    };
+
+    // Listen for user registration events
+    window.addEventListener('userRegistered', handleDoctorRegistration);
+    window.addEventListener('doctorRegistered', handleDoctorRegistration);
+    window.addEventListener('doctorVerified', handleDoctorRegistration);
+    window.addEventListener('userStatusUpdated', handleDoctorRegistration);
+
+    return () => {
+      window.removeEventListener('userRegistered', handleDoctorRegistration);
+      window.removeEventListener('doctorRegistered', handleDoctorRegistration);
+      window.removeEventListener('doctorVerified', handleDoctorRegistration);
+      window.removeEventListener('userStatusUpdated', handleDoctorRegistration);
+    };
   }, []);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  };
+
+  // Get user's current location
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      showToast('Geolocation is not supported by this browser', 'error');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setLocationPermission('granted');
+        showToast('Location detected! Showing nearby doctors', 'success');
+      },
+      (error) => {
+        setLocationPermission('denied');
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            showToast('Location access denied. Please enable location services', 'error');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            showToast('Location information unavailable', 'error');
+            break;
+          case error.TIMEOUT:
+            showToast('Location request timed out', 'error');
+            break;
+          default:
+            showToast('An unknown error occurred while retrieving location', 'error');
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
 
   const loadDoctors = () => {
     try {
-      const allUsers = userStorage.getAllUsers();
-      const registeredDoctors = allUsers.filter(user => 
-        user.userType === 'doctor' && 
-        user.status === 'active' && 
-        user.specialization
-      );
+      // Get all verified doctors from user storage
+      // This includes all doctors who have registered and been verified
+      // New doctors will automatically appear here when they sign up
+      const registeredDoctors = userStorage.getAllDoctors();
       setDoctors(registeredDoctors);
     } catch (error) {
       console.error('Error loading doctors:', error);
       showToast('Error loading doctors', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -65,6 +538,7 @@ const FindDoctors: React.FC = () => {
     'Adliya'
   ];
 
+  // Enhanced mock doctors with location coordinates
   const mockDoctors = [
     {
       id: '1',
@@ -80,7 +554,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, King Faisal University',
       hospital: 'Bahrain Specialist Hospital',
-      location: 'Manama'
+      location: 'Manama',
+      coordinates: { lat: 26.2285, lng: 50.5860 }, // Manama coordinates
+      address: 'Building 2345, Road 2832, Block 428, Manama'
     },
     {
       id: '2',
@@ -96,7 +572,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, Arabian Gulf University',
       hospital: 'Salmaniya Medical Complex',
-      location: 'Manama'
+      location: 'Manama',
+      coordinates: { lat: 26.2361, lng: 50.5831 },
+      address: 'Salmaniya Medical Complex, Road 2904, Manama'
     },
     {
       id: '3',
@@ -112,7 +590,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, University of Bahrain',
       hospital: 'King Hamad University Hospital',
-      location: 'Muharraq'
+      location: 'Muharraq',
+      coordinates: { lat: 26.2720, lng: 50.6197 },
+      address: 'King Hamad University Hospital, Busaiteen, Muharraq'
     },
     {
       id: '4',
@@ -128,7 +608,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, PhD, Johns Hopkins (USA)',
       hospital: 'Royal Bahrain Hospital',
-      location: 'Riffa'
+      location: 'Riffa',
+      coordinates: { lat: 26.1300, lng: 50.5550 },
+      address: 'Royal Bahrain Hospital, Road 5515, East Riffa'
     },
     {
       id: '5',
@@ -144,7 +626,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, Arabian Gulf University',
       hospital: 'Ibn Al-Nafees Hospital',
-      location: 'Isa Town'
+      location: 'Isa Town',
+      coordinates: { lat: 26.1736, lng: 50.5500 },
+      address: 'Ibn Al-Nafees Hospital, Road 4626, Isa Town'
     },
     {
       id: '6',
@@ -160,7 +644,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, University of London',
       hospital: 'American Mission Hospital',
-      location: 'Manama'
+      location: 'Manama',
+      coordinates: { lat: 26.2172, lng: 50.5822 },
+      address: 'American Mission Hospital, Road 2423, Manama'
     },
     {
       id: '7',
@@ -176,7 +662,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, University of Edinburgh',
       hospital: 'Gulf Diagnostic Centre',
-      location: 'Adliya'
+      location: 'Adliya',
+      coordinates: { lat: 26.2125, lng: 50.5775 },
+      address: 'Gulf Diagnostic Centre, Road 3802, Adliya'
     },
     {
       id: '8',
@@ -192,7 +680,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, American University of Beirut',
       hospital: 'Noor Specialist Hospital',
-      location: 'Sitra'
+      location: 'Sitra',
+      coordinates: { lat: 26.1500, lng: 50.6167 },
+      address: 'Noor Specialist Hospital, Road 4411, Sitra'
     },
     {
       id: '9',
@@ -208,7 +698,9 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, Cairo University',
       hospital: 'Eye Care Centre Bahrain',
-      location: 'Hamad Town'
+      location: 'Hamad Town',
+      coordinates: { lat: 26.1167, lng: 50.4833 },
+      address: 'Eye Care Centre, Road 5124, Hamad Town'
     },
     {
       id: '10',
@@ -224,18 +716,51 @@ const FindDoctors: React.FC = () => {
       languages: ['Arabic', 'English'],
       education: 'MD, King Saud University',
       hospital: 'Diabetes & Endocrine Centre',
-      location: 'Budaiya'
+      location: 'Budaiya',
+      coordinates: { lat: 26.2167, lng: 50.4500 },
+      address: 'Diabetes & Endocrine Centre, Road 4215, Budaiya'
     }
   ];
 
-  const filteredDoctors = doctors.filter(doctor => {
+
+
+  // Combine registered doctors with mock doctors for demonstration
+  const allDoctors: UnifiedDoctor[] = [
+    ...doctors.map(doctor => ({
+      ...doctor,
+      specialty: doctor.specialization,
+      fee: doctor.consultationFee
+    })),
+    ...mockDoctors.map(mockDoctor => ({
+      ...mockDoctor,
+      // Add required User fields for mock doctors
+      email: `${mockDoctor.id}@patientcare.bh`,
+      password: 'demo123',
+      userType: 'doctor' as const,
+      cpr: `99${mockDoctor.id.padStart(7, '0')}`,
+      status: 'verified' as const,
+      createdAt: new Date().toISOString(),
+      specialization: mockDoctor.specialty,
+      consultationFee: mockDoctor.fee,
+      experience: mockDoctor.experience.toString() // Convert number to string
+    }))
+  ];
+
+  const filteredDoctors = allDoctors.filter(doctor => {
     const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (doctor.specialty && doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (doctor.specialization && doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (doctor.hospital && doctor.hospital.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (doctor.qualifications && doctor.qualifications.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     const matchesSpecialty = !selectedSpecialty || selectedSpecialty === 'All Specialties' || 
-                            doctor.specialization === selectedSpecialty;
-    // For now, we'll skip location filtering since we don't have location data for doctors
-    return matchesSearch && matchesSpecialty;
+                            doctor.specialization === selectedSpecialty ||
+                            doctor.specialty === selectedSpecialty;
+    
+    const matchesLocation = !selectedLocation || selectedLocation === 'All Locations' || 
+                           doctor.location === selectedLocation;
+    
+    return matchesSearch && matchesSpecialty && matchesLocation;
   });
 
   const sortedDoctors = [...filteredDoctors].sort((a, b) => {
@@ -243,18 +768,34 @@ const FindDoctors: React.FC = () => {
       case 'rating':
         return (b.rating || 0) - (a.rating || 0);
       case 'experience':
-        // Extract years from experience string (e.g., "5 years" -> 5)
-        const aExp = parseInt(a.experience?.match(/\d+/)?.[0] || '0');
-        const bExp = parseInt(b.experience?.match(/\d+/)?.[0] || '0');
+        // Extract years from experience string (e.g., "5 years" -> 5) or use direct number
+        const aExp = typeof a.experience === 'number' ? a.experience : parseInt(a.experience?.match(/\d+/)?.[0] || '0');
+        const bExp = typeof b.experience === 'number' ? b.experience : parseInt(b.experience?.match(/\d+/)?.[0] || '0');
         return bExp - aExp;
       case 'fee-low':
-        return (a.consultationFee || 0) - (b.consultationFee || 0);
+        return (a.consultationFee || a.fee || 0) - (b.consultationFee || b.fee || 0);
       case 'fee-high':
-        return (b.consultationFee || 0) - (a.consultationFee || 0);
+        return (b.consultationFee || b.fee || 0) - (a.consultationFee || a.fee || 0);
+      case 'distance':
+        if (!userLocation) return 0;
+        const aDistance = a.coordinates ? calculateDistance(userLocation.lat, userLocation.lng, a.coordinates.lat, a.coordinates.lng) : Infinity;
+        const bDistance = b.coordinates ? calculateDistance(userLocation.lat, userLocation.lng, b.coordinates.lat, b.coordinates.lng) : Infinity;
+        return aDistance - bDistance;
       default:
         return 0;
     }
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedDoctors.length / DOCTORS_PER_PAGE);
+  const startIndex = (currentPage - 1) * DOCTORS_PER_PAGE;
+  const endIndex = startIndex + DOCTORS_PER_PAGE;
+  const paginatedDoctors = sortedDoctors.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedSpecialty, selectedLocation, sortBy]);
 
   const handleBookAppointment = (doctorId: string) => {
     if (!userLoggedIn) {
@@ -262,12 +803,21 @@ const FindDoctors: React.FC = () => {
       navigate(routes.login);
       return;
     }
-    console.log('Booking appointment with doctor:', doctorId);
-    showToast('Appointment booking feature coming soon!', 'info');
+    
+    // Find the doctor to get their name
+    const doctor = allDoctors.find(d => d.id === doctorId);
+    if (doctor) {
+      setSelectedDoctor({ id: doctorId, name: doctor.name });
+      setShowBookingModal(true);
+    }
   };
 
   const handleViewProfile = (doctorId: string) => {
-    navigate(`/doctor/${doctorId}`);
+    const doctor = allDoctors.find(d => d.id === doctorId);
+    if (doctor) {
+      setSelectedDoctorDetails(doctor);
+      setShowDoctorDetails(true);
+    }
   };
 
   return (
@@ -450,6 +1000,7 @@ const FindDoctors: React.FC = () => {
                 <option value="experience">Most Experienced</option>
                 <option value="fee-low">Lowest Fee</option>
                 <option value="fee-high">Highest Fee</option>
+                {userLocation && <option value="distance">Nearest to Me</option>}
               </select>
             </div>
           </div>
@@ -467,8 +1018,8 @@ const FindDoctors: React.FC = () => {
             flexWrap: 'wrap',
             gap: '16px'
           }}>
-            <div>
-              <p style={{ fontSize: '18px', color: '#6b7280' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <p style={{ fontSize: '18px', color: '#6b7280', margin: 0 }}>
                 Found <span style={{ fontWeight: '600', color: '#111827' }}>{sortedDoctors.length}</span> doctors
                 {selectedSpecialty && selectedSpecialty !== 'All Specialties' && (
                   <span> in <span style={{ fontWeight: '600', color: '#0d9488' }}>{selectedSpecialty}</span></span>
@@ -477,46 +1028,202 @@ const FindDoctors: React.FC = () => {
                   <span> in <span style={{ fontWeight: '600', color: '#2563eb' }}>{selectedLocation}</span></span>
                 )}
               </p>
-
+              
+              {/* Refresh Button */}
+              <button
+                onClick={() => {
+                  loadDoctors();
+                  showToast('Doctors list refreshed', 'success');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  backgroundColor: 'white',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  color: '#374151',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#0d9488';
+                  e.currentTarget.style.color = '#0d9488';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.color = '#374151';
+                }}
+                title="Refresh doctors list"
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                backgroundColor: '#f3f4f6',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}>
+              <button 
+                onClick={getUserLocation}
+                disabled={locationPermission === 'denied'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: userLocation ? '#dcfce7' : locationPermission === 'denied' ? '#fef2f2' : '#f3f4f6',
+                  border: `1px solid ${userLocation ? '#16a34a' : locationPermission === 'denied' ? '#ef4444' : '#d1d5db'}`,
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  cursor: locationPermission === 'denied' ? 'not-allowed' : 'pointer',
+                  color: userLocation ? '#166534' : locationPermission === 'denied' ? '#dc2626' : '#374151',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (locationPermission !== 'denied') {
+                    e.currentTarget.style.backgroundColor = userLocation ? '#bbf7d0' : '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = userLocation ? '#dcfce7' : locationPermission === 'denied' ? '#fef2f2' : '#f3f4f6';
+                }}
+              >
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Near Me
+                {userLocation ? 'Location Detected' : locationPermission === 'denied' ? 'Location Denied' : 'Near Me'}
               </button>
+              {userLocation && (
+                <button
+                  onClick={() => setSortBy('distance')}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: sortBy === 'distance' ? '#0d9488' : 'white',
+                    color: sortBy === 'distance' ? 'white' : '#0d9488',
+                    border: '1px solid #0d9488',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Sort by Distance
+                </button>
+              )}
             </div>
           </div>
 
           {/* Doctor Cards Grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: window.innerWidth >= 1024 ? 'repeat(3, 1fr)' : window.innerWidth >= 768 ? 'repeat(2, 1fr)' : '1fr',
-            gap: '24px'
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '24px',
+            marginBottom: '40px'
           }}>
-            {sortedDoctors.map((doctor) => (
-              <DoctorCard
-                key={doctor.id}
-                doctor={doctor}
-                onBookAppointment={handleBookAppointment}
-                onViewProfile={handleViewProfile}
-                isUserLoggedIn={userLoggedIn}
-              />
-            ))}
+            {paginatedDoctors.map((doctor) => {
+              const distance = userLocation && doctor.coordinates 
+                ? calculateDistance(userLocation.lat, userLocation.lng, doctor.coordinates.lat, doctor.coordinates.lng)
+                : undefined;
+              
+              return (
+                <div key={doctor.id} style={{ height: '100%' }}>
+                  <DoctorCard
+                    doctor={doctor as any} // Type assertion to handle the unified type
+                    onBookAppointment={handleBookAppointment}
+                    onViewProfile={handleViewProfile}
+                    isUserLoggedIn={userLoggedIn}
+                    distance={distance}
+                  />
+                </div>
+              );
+            })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '40px'
+            }}>
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: currentPage === 1 ? '#f3f4f6' : '#0d9488',
+                  color: currentPage === 1 ? '#9ca3af' : 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Previous
+              </button>
+
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: currentPage === page ? '#0d9488' : 'white',
+                      color: currentPage === page ? 'white' : '#374151',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      minWidth: '40px'
+                    }}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: currentPage === totalPages ? '#f3f4f6' : '#0d9488',
+                  color: currentPage === totalPages ? '#9ca3af' : 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          {/* Pagination Info */}
+          {sortedDoctors.length > 0 && (
+            <div style={{
+              textAlign: 'center',
+              fontSize: '14px',
+              color: '#6b7280',
+              marginBottom: '20px'
+            }}>
+              Showing {startIndex + 1}-{Math.min(endIndex, sortedDoctors.length)} of {sortedDoctors.length} doctors
+              {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
+            </div>
+          )}
 
           {/* Empty State */}
           {sortedDoctors.length === 0 && (
@@ -584,6 +1291,31 @@ const FindDoctors: React.FC = () => {
       </section>
 
       <Footer />
+      
+      {/* Booking Modal */}
+      {showBookingModal && selectedDoctor && (
+        <BookAppointmentDemo
+          doctorId={selectedDoctor.id}
+          doctorName={selectedDoctor.name}
+          onClose={() => {
+            setShowBookingModal(false);
+            setSelectedDoctor(null);
+          }}
+        />
+      )}
+
+      {/* Doctor Details Modal */}
+      {showDoctorDetails && selectedDoctorDetails && (
+        <DoctorDetailsModal
+          doctor={selectedDoctorDetails}
+          onClose={() => {
+            setShowDoctorDetails(false);
+            setSelectedDoctorDetails(null);
+          }}
+          onBookAppointment={handleBookAppointment}
+          isUserLoggedIn={userLoggedIn}
+        />
+      )}
     </div>
   );
 };

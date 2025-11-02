@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { handleNavigation, routes, isLoggedIn } from '../utils/navigation';
 import { useToast } from './Toast';
+import './Header.css';
 
 interface User {
   id: string;
@@ -15,7 +16,9 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
   // Check for user authentication
@@ -31,6 +34,11 @@ const Header: React.FC = () => {
       }
     }
   }, []);
+
+  // Check if we can go back
+  useEffect(() => {
+    setCanGoBack(window.history.length > 1 && location.pathname !== '/');
+  }, [location]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -70,9 +78,17 @@ const Header: React.FC = () => {
     localStorage.removeItem('redirectAfterLogin');
     setUser(null);
     showToast('You have been logged out', 'info');
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new CustomEvent('userLogout'));
+    
     navigate(routes.home);
     setIsMenuOpen(false);
     setShowDropdown(false);
+  };
+
+  const handleGoBack = () => {
+    navigate(-1);
   };
 
   return (
@@ -92,52 +108,87 @@ const Header: React.FC = () => {
         justifyContent: 'space-between',
         height: '70px'
       }}>
-        {/* Logo */}
-        <button 
-          onClick={() => handleNavClick(routes.home)}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer'
-          }}
-        >
-          <div style={{
-            width: '48px',
-            height: '48px',
-            backgroundColor: '#0d9488',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <svg width="28" height="28" fill="white" viewBox="0 0 24 24">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-4v-4h4v4zm0-6h-4V7h4v4z"/>
-            </svg>
-          </div>
-          <div>
-            <h1 style={{ 
-              fontSize: '24px', 
-              fontWeight: '700', 
-              color: '#111827',
-              margin: 0
+        {/* Logo and Back Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {canGoBack && (
+            <button
+              onClick={handleGoBack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '40px',
+                height: '40px',
+                backgroundColor: '#f3f4f6',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#e5e7eb';
+                e.currentTarget.style.borderColor = '#0d9488';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                e.currentTarget.style.borderColor = '#d1d5db';
+              }}
+              title="Go back"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+          )}
+          
+          <button 
+            onClick={() => handleNavClick(routes.home)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{
+              width: '48px',
+              height: '48px',
+              backgroundColor: '#0d9488',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              PatientCare
-            </h1>
-          </div>
-        </button>
+              <svg width="28" height="28" fill="white" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-4v-4h4v4zm0-6h-4V7h4v4z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 style={{ 
+                fontSize: '24px', 
+                fontWeight: '700', 
+                color: '#111827',
+                margin: 0
+              }}>
+                PatientCare
+              </h1>
+            </div>
+          </button>
+        </div>
 
         {/* Desktop Navigation - Centered */}
         <nav style={{ 
-          display: window.innerWidth >= 768 ? 'flex' : 'none',
+          display: 'flex',
           alignItems: 'center',
-          gap: '32px',
+          gap: '20px',
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)'
-        }}>
+        }}
+        className="desktop-nav"
+        >
           <button 
             onClick={() => handleNavClick(routes.home)}
             style={{ 
@@ -145,7 +196,7 @@ const Header: React.FC = () => {
               background: 'none',
               border: 'none',
               fontWeight: '500',
-              fontSize: '16px',
+              fontSize: '14px',
               transition: 'color 0.2s',
               cursor: 'pointer'
             }}
@@ -156,40 +207,23 @@ const Header: React.FC = () => {
           </button>
           {user && (
             <>
+
               <button 
-                onClick={() => handleNavClick(routes.dashboard)}
+                onClick={() => handleNavClick(user.userType === 'doctor' ? '/past-patients' : routes.doctors)}
                 style={{ 
                   color: '#6b7280', 
                   background: 'none',
                   border: 'none',
                   fontWeight: '500',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   transition: 'color 0.2s',
                   cursor: 'pointer'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
                 onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
               >
-                {user.userType === 'doctor' ? 'Past Patients' : 'Dashboard'}
+                {user.userType === 'doctor' ? 'Patients' : 'Doctors'}
               </button>
-              {user.userType !== 'doctor' && (
-                <button 
-                  onClick={() => handleNavClick(routes.doctors)}
-                  style={{ 
-                    color: '#6b7280', 
-                    background: 'none',
-                    border: 'none',
-                    fontWeight: '500',
-                    fontSize: '16px',
-                    transition: 'color 0.2s',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
-                >
-                  Find Doctors
-                </button>
-              )}
               <button 
                 onClick={() => handleNavClick(routes.appointments)}
                 style={{ 
@@ -197,32 +231,128 @@ const Header: React.FC = () => {
                   background: 'none',
                   border: 'none',
                   fontWeight: '500',
-                  fontSize: '16px',
+                  fontSize: '14px',
                   transition: 'color 0.2s',
                   cursor: 'pointer'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
                 onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
               >
-                My Appointments
+                Appointments
               </button>
             </>
           )}
+
+          {user && user.userType === 'patient' && (
+            <>
+              <button 
+                onClick={() => handleNavClick(routes.prescriptions)}
+                style={{ 
+                  color: '#6b7280', 
+                  background: 'none',
+                  border: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                Prescriptions
+              </button>
+            </>
+          )}
+
+          {user && user.userType === 'doctor' && (
+            <>
+              <button 
+                onClick={() => handleNavClick('/write-prescription')}
+                style={{ 
+                  color: '#6b7280', 
+                  background: 'none',
+                  border: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                Prescriptions
+              </button>
+              <button 
+                onClick={() => handleNavClick(routes.manageAvailability)}
+                style={{ 
+                  color: '#6b7280', 
+                  background: 'none',
+                  border: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                Availability
+              </button>
+            </>
+          )}
+          {user && user.userType === 'admin' && (
+            <>
+              <button 
+                onClick={() => handleNavClick('/write-prescription')}
+                style={{ 
+                  color: '#6b7280', 
+                  background: 'none',
+                  border: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                Prescriptions
+              </button>
+              <button 
+                onClick={() => handleNavClick(routes.manageAvailability)}
+                style={{ 
+                  color: '#6b7280', 
+                  background: 'none',
+                  border: 'none',
+                  fontWeight: '500',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+              >
+                Availability
+              </button>
+            </>
+          )}
+
+          {/* Always visible navigation items */}
           <button 
-            onClick={() => handleNavClick(user && user.userType === 'doctor' ? routes.blog : routes.about)}
+            onClick={() => handleNavClick(routes.about)}
             style={{ 
               color: '#6b7280', 
               background: 'none',
               border: 'none',
               fontWeight: '500',
-              fontSize: '16px',
+              fontSize: '14px',
               transition: 'color 0.2s',
               cursor: 'pointer'
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
           >
-            {user && user.userType === 'doctor' ? 'Blog' : 'About'}
+            About
           </button>
           <button 
             onClick={() => handleNavClick(routes.contact)}
@@ -231,117 +361,90 @@ const Header: React.FC = () => {
               background: 'none',
               border: 'none',
               fontWeight: '500',
-              fontSize: '16px',
+              fontSize: '14px',
               transition: 'color 0.2s',
               cursor: 'pointer'
             }}
             onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
           >
-            Contact
+            Contact Us
           </button>
+
         </nav>
 
         {/* Desktop CTA Buttons */}
         <div style={{ 
-          display: window.innerWidth >= 768 ? 'flex' : 'none',
+          display: 'flex',
           alignItems: 'center',
           gap: '12px'
-        }}>
+        }}
+        className="desktop-cta"
+        >
           {user ? (
             // Authenticated user profile
             <div style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNavClick(routes.profile);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0fdfa';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                  title="Click to view profile"
-                >
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#111827',
-                      margin: 0
-                    }}>
-                      {user.name}
-                    </p>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#6b7280',
-                      margin: 0
-                    }}>
-                      {user.userType === 'doctor' ? 'Doctor' : 'Patient'}
-                    </p>
-                  </div>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    backgroundColor: '#f0fdfa',
-                    borderRadius: '50%',
-                    border: '2px solid #0d9488',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s'
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDropdown(!showDropdown);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f0fdfa';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Click to open menu"
+              >
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    margin: 0
                   }}>
-                    <span style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#0d9488'
-                    }}>
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDropdown(!showDropdown);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    transition: 'all 0.2s',
-                    color: '#6b7280'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f0fdfa';
-                    e.currentTarget.style.color = '#0d9488';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#6b7280';
-                  }}
-                  title="Open menu"
-                >
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 10l5 5 5-5z"/>
-                  </svg>
-                </button>
-              </div>
+                    {user.name}
+                  </p>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    margin: 0
+                  }}>
+                    {user.userType === 'doctor' ? 'Doctor' : user.userType === 'admin' ? 'Admin' : 'Patient'}
+                  </p>
+                </div>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  backgroundColor: '#f0fdfa',
+                  borderRadius: '50%',
+                  border: '2px solid #0d9488',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0d9488'
+                  }}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              </button>
 
               {/* Dropdown Menu */}
               {showDropdown && (
@@ -376,6 +479,31 @@ const Header: React.FC = () => {
                   <div style={{ padding: '8px 0' }}>
                     <button
                       onClick={() => {
+                        handleNavClick(routes.profile);
+                        setShowDropdown(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '8px 16px',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        color: '#374151',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f9fafb';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
                         handleNavClick(routes.dashboard);
                         setShowDropdown(false);
                       }}
@@ -398,31 +526,6 @@ const Header: React.FC = () => {
                       }}
                     >
                       Dashboard
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleNavClick(routes.profile);
-                        setShowDropdown(false);
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '8px 16px',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        color: '#374151',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f9fafb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      Account Settings
                     </button>
                     <button
                       onClick={() => {
@@ -508,12 +611,12 @@ const Header: React.FC = () => {
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           style={{
-            display: window.innerWidth < 768 ? 'block' : 'none',
             padding: '8px',
             backgroundColor: 'transparent',
             border: 'none',
             cursor: 'pointer'
           }}
+          className="mobile-menu-btn"
         >
           <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -524,32 +627,62 @@ const Header: React.FC = () => {
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div style={{
-          display: window.innerWidth < 768 ? 'block' : 'none',
           backgroundColor: 'white',
           borderTop: '1px solid #e5e7eb',
           padding: '20px'
-        }}>
+        }}
+        className="mobile-menu"
+        >
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button onClick={() => handleNavClick(routes.home)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>Home</button>
             {user && (
               <>
-                <button onClick={() => handleNavClick(routes.dashboard)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
-                  {user && user.userType === 'doctor' ? 'Past Patients' : 'Dashboard'}
+
+                <button onClick={() => handleNavClick(user.userType === 'doctor' ? '/past-patients' : routes.doctors)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  {user.userType === 'doctor' ? 'Past Patients' : 'Find Doctors'}
                 </button>
-                {user.userType !== 'doctor' && (
-                  <button onClick={() => handleNavClick(routes.doctors)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
-                    Find Doctors
-                  </button>
-                )}
                 <button onClick={() => handleNavClick(routes.appointments)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
                   My Appointments
                 </button>
               </>
             )}
-            <button onClick={() => handleNavClick(user && user.userType === 'doctor' ? routes.blog : routes.about)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
-              {user && user.userType === 'doctor' ? 'Blog' : 'About'}
+            {user && user.userType === 'doctor' && (
+              <>
+                <button onClick={() => handleNavClick('/write-prescription')} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  Write Prescription
+                </button>
+                <button onClick={() => handleNavClick(routes.manageAvailability)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  Availability
+                </button>
+                <button onClick={() => handleNavClick(routes.blog)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  Blog
+                </button>
+              </>
+            )}
+            {user && user.userType === 'admin' && (
+              <>
+                <button onClick={() => handleNavClick('/write-prescription')} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  Write Prescription
+                </button>
+                <button onClick={() => handleNavClick(routes.manageAvailability)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  Availability
+                </button>
+              </>
+            )}
+            {user && user.userType === 'patient' && (
+              <>
+                <button onClick={() => handleNavClick(routes.prescriptions)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+                  My Prescriptions
+                </button>
+              </>
+            )}
+            {/* Always visible navigation items */}
+            <button onClick={() => handleNavClick(routes.about)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+              About
             </button>
-            <button onClick={() => handleNavClick(routes.contact)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>Contact</button>
+            <button onClick={() => handleNavClick(routes.contact)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
+              Contact Us
+            </button>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
               {user ? (
                 <>

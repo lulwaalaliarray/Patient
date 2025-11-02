@@ -1,14 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../utils/userStorage';
+import { reviewStorage } from '../utils/reviewStorage';
 
 interface DoctorCardProps {
-  doctor: User;
+  doctor: User & {
+    specialty?: string;
+    experience?: number | string;
+    rating?: number;
+    reviewCount?: number;
+    fee?: number;
+    isOnline?: boolean;
+    nextAvailable?: string;
+    languages?: string[];
+    education?: string;
+    hospital?: string;
+    coordinates?: { lat: number; lng: number };
+    address?: string;
+  };
   onBookAppointment: (doctorId: string) => void;
   onViewProfile: (doctorId: string) => void;
   isUserLoggedIn?: boolean;
+  distance?: number;
 }
 
-const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onViewProfile, isUserLoggedIn = false }) => {
+const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onViewProfile, isUserLoggedIn = false, distance }) => {
+  const [realTimeRating, setRealTimeRating] = useState<number>(0); // Start with 0, load real data
+  const [realTimeReviewCount, setRealTimeReviewCount] = useState<number>(0); // Start with 0, load real data
+
+  // Load real-time review data
+  useEffect(() => {
+    const loadReviewData = () => {
+      const doctorReviews = reviewStorage.getDoctorReviews(doctor.id);
+      const averageRating = reviewStorage.getDoctorAverageRating(doctor.id);
+      
+      setRealTimeRating(averageRating || 0); // Only use real ratings, no fallback to mock data
+      setRealTimeReviewCount(doctorReviews.length || 0); // Only use real review count
+    };
+
+    loadReviewData();
+
+    // Listen for review updates
+    const handleReviewUpdate = () => {
+      loadReviewData();
+    };
+
+    window.addEventListener('reviewAdded', handleReviewUpdate);
+    window.addEventListener('reviewUpdated', handleReviewUpdate);
+
+    return () => {
+      window.removeEventListener('reviewAdded', handleReviewUpdate);
+      window.removeEventListener('reviewUpdated', handleReviewUpdate);
+    };
+  }, [doctor.id, doctor.rating, doctor.reviewCount]);
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
       <svg
@@ -31,7 +75,10 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
       border: '1px solid #f3f4f6',
       transition: 'all 0.3s ease',
       cursor: 'pointer',
-      height: 'fit-content'
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '400px'
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-4px)';
@@ -113,13 +160,13 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
             fontWeight: '500',
             marginBottom: '4px'
           }}>
-            {doctor.specialization}
+            {doctor.specialization || doctor.specialty}
           </p>
           <p style={{
             fontSize: '14px',
             color: '#6b7280'
           }}>
-            {doctor.qualifications}
+            {doctor.qualifications || doctor.education}
           </p>
           {doctor.hospital && (
             <p style={{
@@ -137,7 +184,21 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
             fontWeight: '500'
           }}>
             📍 {doctor.location || 'Bahrain'}
+            {distance && (
+              <span style={{ marginLeft: '8px', color: '#6366f1' }}>
+                • {distance.toFixed(1)} km away
+              </span>
+            )}
           </p>
+          {doctor.address && (
+            <p style={{
+              fontSize: '11px',
+              color: '#9ca3af',
+              marginTop: '2px'
+            }}>
+              {doctor.address}
+            </p>
+          )}
         </div>
 
         <div style={{ textAlign: 'right' }}>
@@ -146,7 +207,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
             fontWeight: '700',
             color: '#111827'
           }}>
-            {doctor.consultationFee || 25} BHD
+            {doctor.consultationFee || doctor.fee || 25} BHD
           </div>
           <div style={{
             fontSize: '12px',
@@ -165,27 +226,78 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
         marginBottom: '16px',
         flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {renderStars(doctor.rating || 4.8)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+          {renderStars(realTimeRating || 4.8)}
           <span style={{
             fontSize: '14px',
             fontWeight: '500',
             color: '#374151',
             marginLeft: '4px'
           }}>
-            {(doctor.rating || 4.8).toFixed(1)}
+            {realTimeRating > 0 ? realTimeRating.toFixed(1) : 'N/A'}
           </span>
-          <span style={{
-            fontSize: '14px',
-            color: '#6b7280'
-          }}>
-            ({doctor.totalReviews || 127} reviews)
-          </span>
+          <button 
+            style={{
+              fontSize: '14px',
+              color: '#0d9488',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              background: 'none',
+              border: 'none',
+              padding: '0',
+              fontWeight: '500',
+              transition: 'color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewProfile(doctor.id);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#0f766e';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#0d9488';
+            }}
+            title="Click to view doctor profile and reviews"
+          >
+            ({realTimeReviewCount > 0 ? `${realTimeReviewCount} review${realTimeReviewCount !== 1 ? 's' : ''}` : 'No reviews yet'})
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
+          
+          {/* Rating Quality Badge */}
+          {realTimeRating >= 4.5 && realTimeReviewCount >= 5 && (
+            <div style={{
+              position: 'absolute',
+              top: '-8px',
+              right: '-8px',
+              backgroundColor: '#10b981',
+              color: 'white',
+              fontSize: '10px',
+              fontWeight: '600',
+              padding: '2px 6px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              Top Rated
+            </div>
+          )}
         </div>
+        
         <div style={{
           fontSize: '14px',
-          color: '#6b7280'
+          color: '#6b7280',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
         }}>
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
           {doctor.experience || '10+ years'} exp.
         </div>
       </div>
@@ -226,7 +338,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
               fontSize: '14px',
               color: '#374151'
             }}>
-              {doctor.status === 'active' ? 'Available now' : 'Next available: Tomorrow 9:00 AM'}
+              {doctor.isOnline ? 'Available now' : doctor.nextAvailable || 'Next available: Tomorrow 9:00 AM'}
             </span>
           </div>
         </div>
@@ -256,13 +368,61 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
         </div>
       )}
 
+      {/* Spacer to push buttons to bottom */}
+      <div style={{ flex: 1 }}></div>
+
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+        {/* View Profile Button */}
         <button
-          onClick={() => onViewProfile(doctor.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onViewProfile(doctor.id);
+          }}
           style={{
             flex: 1,
-            padding: '12px',
+            padding: '10px 16px',
+            backgroundColor: 'white',
+            color: '#0d9488',
+            border: '1px solid #0d9488',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0fdfa';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'white';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          View Profile
+        </button>
+
+        {/* Book Appointment Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isUserLoggedIn) {
+              onBookAppointment(doctor.id);
+            } else {
+              onViewProfile(doctor.id);
+            }
+          }}
+          style={{
+            flex: 1,
+            padding: '10px 16px',
             background: isUserLoggedIn 
               ? 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%)'
               : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
@@ -272,7 +432,11 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
           }}
           onMouseEnter={(e) => {
             if (isUserLoggedIn) {
@@ -287,10 +451,21 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
             }
           }}
         >
-          {isUserLoggedIn 
-            ? 'Book an Appointment'
-            : 'Sign In to Book'
-          }
+          {isUserLoggedIn ? (
+            <>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M3 7h18l-2 13H5L3 7z" />
+              </svg>
+              Book Appointment
+            </>
+          ) : (
+            <>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
+              </svg>
+              Sign In to Book
+            </>
+          )}
         </button>
       </div>
     </div>

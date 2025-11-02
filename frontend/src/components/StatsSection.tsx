@@ -107,62 +107,7 @@ const StatsSection: React.FC = () => {
           ))}
         </div>
 
-        {/* CTA Section */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '80px',
-          padding: '40px',
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '16px',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h3 style={{
-            fontSize: '24px',
-            fontWeight: '700',
-            color: 'white',
-            marginBottom: '16px'
-          }}>
-            Ready to get started?
-          </h3>
-          <p style={{
-            fontSize: '16px',
-            color: 'rgba(255, 255, 255, 0.8)',
-            marginBottom: '24px'
-          }}>
-            Join thousands of satisfied Bahraini patients and take control of your health journey today.
-          </p>
-          <button
-            onClick={() => handleNavigation(navigate, routes.signup, false, showToast)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '16px 32px',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#0d9488',
-              backgroundColor: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.1)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.1)';
-            }}
-          >
-            Start Your Journey
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </button>
-        </div>
+
       </div>
     </section>
   );

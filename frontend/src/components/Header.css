@@ -1,0 +1,77 @@
+/* Header Responsive Styles */
+
+/* Desktop Navigation - Show on larger screens */
+@media (min-width: 768px) {
+  .desktop-nav {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .desktop-cta {
+    display: flex !important;
+  }
+  
+  .mobile-menu-btn {
+    display: none !important;
+  }
+  
+  .mobile-menu {
+    display: none !important;
+  }
+}
+
+/* Mobile Navigation - Show on smaller screens */
+@media (max-width: 767px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .desktop-cta {
+    display: none !important;
+  }
+  
+  .mobile-menu-btn {
+    display: block !important;
+  }
+  
+  .mobile-menu {
+    display: block !important;
+  }
+}
+
+/* Ensure navigation is always visible on desktop */
+.desktop-nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.desktop-cta {
+  align-items: center;
+  gap: 12px;
+}
+
+/* Mobile menu button styling */
+.mobile-menu-btn {
+  padding: 8px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.mobile-menu-btn:hover {
+  color: #0d9488;
+}
+
+/* Mobile menu styling */
+.mobile-menu {
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 20px;
+}

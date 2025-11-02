@@ -1,7 +1,18 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface Feature {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: string;
+  action?: () => void;
+  buttonText?: string;
+}
 
 const FeaturesSection: React.FC = () => {
-  const features = [
+  const navigate = useNavigate();
+  const features: Feature[] = [
     {
       icon: (
         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,10 +176,48 @@ const FeaturesSection: React.FC = () => {
               <p style={{
                 fontSize: '16px',
                 color: '#6b7280',
-                lineHeight: '1.6'
+                lineHeight: '1.6',
+                marginBottom: feature.action ? '20px' : '0'
               }}>
                 {feature.description}
               </p>
+              
+              {feature.action && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    feature.action();
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 20px',
+                    backgroundColor: feature.color,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: `0 4px 14px ${feature.color}30`
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = `0 6px 20px ${feature.color}40`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = `0 4px 14px ${feature.color}30`;
+                  }}
+                >
+                  📋 {feature.buttonText}
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              )}
             </div>
           ))}
         </div>

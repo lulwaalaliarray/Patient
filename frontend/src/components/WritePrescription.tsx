@@ -5,7 +5,6 @@ import Footer from './Footer';
 import BackToTopButton from './BackToTopButton';
 import { useToast } from './Toast';
 import { prescriptionStorage } from '../utils/prescriptionStorage';
-import { appointmentStorage } from '../utils/appointmentStorage';
 import { isLoggedIn } from '../utils/navigation';
 
 const WritePrescription: React.FC = () => {
@@ -15,6 +14,8 @@ const WritePrescription: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [pastPatients, setPastPatients] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState('');
+  const [availableAppointments, setAvailableAppointments] = useState<any[]>([]);
   const [diagnosis, setDiagnosis] = useState('');
   const [notes, setNotes] = useState('');
   const [medications, setMedications] = useState([
@@ -55,21 +56,42 @@ const WritePrescription: React.FC = () => {
   }, [navigate, showToast]);
 
   const loadPastPatients = (doctorId: string) => {
-    const appointments = appointmentStorage.getDoctorAppointments(doctorId);
-    // Get unique patients
-    const uniquePatients = appointments.reduce((acc: any[], appointment) => {
+    // Get appointments that are available for prescription (completed, no prescription yet)
+    const availableAppointments = prescriptionStorage.getAppointmentsAvailableForPrescription(doctorId);
+    
+    // Get unique patients from these appointments
+    const uniquePatients = availableAppointments.reduce((acc: any[], appointment) => {
       const existingPatient = acc.find(p => p.patientId === appointment.patientId);
       if (!existingPatient) {
         acc.push({
           patientId: appointment.patientId,
           patientName: appointment.patientName,
           patientEmail: appointment.patientEmail,
-          lastVisit: appointment.date
+          lastVisit: appointment.date,
+          availableVisits: availableAppointments.filter(apt => 
+            apt.patientId === appointment.patientId || apt.patientEmail === appointment.patientEmail
+          ).length
         });
       }
       return acc;
     }, []);
     setPastPatients(uniquePatients);
+  };
+
+  // Load available appointments when patient is selected
+  const handlePatientSelection = (patientId: string) => {
+    setSelectedPatient(patientId);
+    setSelectedAppointment('');
+    
+    if (patientId && user) {
+      const appointments = prescriptionStorage.getPatientAppointmentsForPrescription(
+        user.id || user.email, 
+        patientId
+      );
+      setAvailableAppointments(appointments);
+    } else {
+      setAvailableAppointments([]);
+    }
   };
 
   const handleMedicationChange = (index: number, field: string, value: string) => {
@@ -103,8 +125,15 @@ const WritePrescription: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedPatient || !diagnosis.trim()) {
-      showToast('Please select a patient and enter a diagnosis', 'error');
+    // Enhanced validation including appointment selection
+    if (!selectedPatient || !selectedAppointment || !diagnosis.trim()) {
+      showToast('Please select a patient, appointment date, and enter a diagnosis', 'error');
+      return;
+    }
+
+    // Check if prescription already exists for this appointment
+    if (prescriptionStorage.prescriptionExistsForAppointment(selectedAppointment)) {
+      showToast('A prescription has already been issued for this appointment', 'error');
       return;
     }
 
@@ -118,8 +147,10 @@ const WritePrescription: React.FC = () => {
     }
 
     const selectedPatientData = pastPatients.find(p => p.patientId === selectedPatient);
-    if (!selectedPatientData) {
-      showToast('Selected patient not found', 'error');
+    const selectedAppointmentData = availableAppointments.find(apt => apt.id === selectedAppointment);
+    
+    if (!selectedPatientData || !selectedAppointmentData) {
+      showToast('Selected patient or appointment not found', 'error');
       return;
     }
 
@@ -130,6 +161,8 @@ const WritePrescription: React.FC = () => {
         patientEmail: selectedPatientData.patientEmail,
         doctorId: user.id || user.email,
         doctorName: user.name,
+        appointmentId: selectedAppointment, // NEW: Link to appointment
+        appointmentDate: selectedAppointmentData.date, // NEW: Visit date
         medications: validMedications,
         diagnosis: diagnosis.trim(),
         notes: notes.trim(),
@@ -137,10 +170,12 @@ const WritePrescription: React.FC = () => {
         status: 'active'
       });
 
-      showToast('Prescription created successfully!', 'success');
+      showToast('Prescription created successfully for the selected visit!', 'success');
       
-      // Reset form
+      // Reset form and reload patients (to update available visits count)
       setSelectedPatient('');
+      setSelectedAppointment('');
+      setAvailableAppointments([]);
       setDiagnosis('');
       setNotes('');
       setMedications([{
@@ -150,6 +185,11 @@ const WritePrescription: React.FC = () => {
         duration: '',
         instructions: ''
       }]);
+      
+      // Reload patients to reflect updated availability
+      if (user) {
+        loadPastPatients(user.id || user.email);
+      }
     } catch (error) {
       console.error('Error creating prescription:', error);
       showToast('Error creating prescription', 'error');
@@ -233,7 +273,7 @@ const WritePrescription: React.FC = () => {
               </label>
               <select
                 value={selectedPatient}
-                onChange={(e) => setSelectedPatient(e.target.value)}
+                onChange={(e) => handlePatientSelection(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -248,7 +288,7 @@ const WritePrescription: React.FC = () => {
                 <option value="">Choose a patient...</option>
                 {pastPatients.map((patient) => (
                   <option key={patient.patientId} value={patient.patientId}>
-                    {patient.patientName} ({patient.patientEmail})
+                    {patient.patientName} ({patient.patientEmail}) - {patient.availableVisits} visit(s) available
                   </option>
                 ))}
               </select>
@@ -258,10 +298,88 @@ const WritePrescription: React.FC = () => {
                   color: '#ef4444',
                   marginTop: '4px'
                 }}>
-                  No past patients found. You can only prescribe to patients you've seen before.
+                  No patients with completed visits available for prescription. Patients must have completed appointments to receive prescriptions.
                 </p>
               )}
             </div>
+
+            {/* Appointment Selection */}
+            {selectedPatient && (
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '8px'
+                }}>
+                  Select Visit Date *
+                </label>
+                <select
+                  value={selectedAppointment}
+                  onChange={(e) => setSelectedAppointment(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    backgroundColor: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                  required
+                >
+                  <option value="">Choose a visit date...</option>
+                  {availableAppointments.map((appointment) => (
+                    <option key={appointment.id} value={appointment.id}>
+                      {new Date(appointment.date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })} at {appointment.time} - {appointment.type}
+                    </option>
+                  ))}
+                </select>
+                
+                {availableAppointments.length === 0 && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px'
+                  }}>
+                    No completed visits available for prescription. All visits for this patient already have prescriptions.
+                  </p>
+                )}
+                
+                {availableAppointments.length > 0 && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#059669',
+                    marginTop: '4px'
+                  }}>
+                    ✓ {availableAppointments.length} completed visit(s) available for prescription
+                  </p>
+                )}
+                
+                <div style={{
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginTop: '8px'
+                }}>
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#1e40af',
+                    margin: 0,
+                    fontWeight: '500'
+                  }}>
+                    ℹ️ You can only issue one prescription per completed visit. Select the specific visit date for this prescription.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Diagnosis */}
             <div style={{ marginBottom: '24px' }}>

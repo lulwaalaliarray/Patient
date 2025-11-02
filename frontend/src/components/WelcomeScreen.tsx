@@ -28,120 +28,77 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onGetStarted }) => {
 
   // Check for user authentication on component mount
   useEffect(() => {
-    window.scrollTo(0, 0);
-    
     if (isLoggedIn()) {
       const userData = localStorage.getItem('userData');
       if (userData) {
         try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
+          setUser(JSON.parse(userData));
         } catch (error) {
           console.error('Error parsing user data:', error);
-          localStorage.removeItem('userData');
-          localStorage.removeItem('authToken');
         }
       }
     }
     setLoading(false);
   }, []);
 
-  const handleWatchDemo = () => {
-    console.log('Watch demo clicked');
-    // Implement demo logic
-  };
-
-  // Show loading state
   if (loading) {
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        backgroundColor: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{
-          fontSize: '18px',
-          color: '#6b7280'
+      <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+        <Header />
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '60vh' 
         }}>
-          Loading...
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              border: '3px solid #e5e7eb',
+              borderTop: '3px solid #0d9488',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px'
+            }}></div>
+            <p style={{ color: '#6b7280', fontSize: '16px' }}>Loading...</p>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
-  // If user is logged in and is a doctor, show DoctorDashboard
+  // If user is a doctor, show doctor dashboard
   if (user && user.userType === 'doctor') {
     return <DoctorDashboard user={user} />;
   }
 
-  // If user is logged in but is a patient, show regular dashboard
-  if (user && user.userType === 'patient') {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
-        <Header />
-
-        {/* Patient Welcome Section */}
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '40px 20px'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '48px 32px',
-            marginBottom: '32px',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            textAlign: 'center'
-          }}>
-            <h1 style={{
-              fontSize: '48px',
-              fontWeight: '700',
-              color: '#111827',
-              marginBottom: '16px'
-            }}>
-              Welcome back, {user.name}!
-            </h1>
-            <p style={{
-              fontSize: '20px',
-              color: '#6b7280',
-              maxWidth: '800px',
-              margin: '0 auto 32px auto',
-              lineHeight: '1.6'
-            }}>
-              Your health journey continues here. Access your medical records, book appointments, and stay connected with your healthcare providers.
-            </p>
-          </div>
-        </div>
-
-        <FeaturesSection />
-        <StatsSection />
-        <Footer />
-        <BackToTopButton />
-      </div>
-    );
-  }
-
-  // Default welcome screen for non-logged-in users
+  // Default welcome screen for non-authenticated users and patients
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       <Header />
-
-      <HeroSection
-        onGetStarted={onGetStarted}
-        onWatchDemo={handleWatchDemo}
-      />
-
-      <FeaturesSection />
-
-      <StatsSection />
-
-      <Footer />
       
-      {/* Back to Top Button */}
+      {/* Hero Section with video/slideshow */}
+      <HeroSection onGetStarted={onGetStarted} />
+      
+      {/* Features Section with information */}
+      <FeaturesSection />
+      
+      {/* Statistics Section */}
+      <StatsSection />
+      
+      <Footer />
       <BackToTopButton />
+      
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 };

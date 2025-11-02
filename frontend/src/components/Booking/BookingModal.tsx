@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../Toast';
 import { appointmentStorage } from '../../utils/appointmentStorage';
+import { availabilityStorage } from '../../utils/availabilityStorage';
 import { User } from '../../utils/userStorage';
 
 interface BookingModalProps {
@@ -18,16 +19,20 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, onClose, onSuccess 
   const [loading, setLoading] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
 
-  // Generate available time slots
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 17; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    return slots;
+  // Check if a date is available for booking
+  const isDateAvailable = (date: string) => {
+    const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const availability = availabilityStorage.getDoctorAvailability(doctor.id);
+    
+    if (!availability) return false;
+    
+    // Check if date is marked as unavailable
+    const isUnavailable = availability.unavailableDates.some(ud => ud.date === date);
+    if (isUnavailable) return false;
+    
+    // Check if day of week is available
+    const daySchedule = availability.weeklySchedule[dayOfWeek];
+    return daySchedule && daySchedule.available && daySchedule.timeSlots.length > 0;
   };
 
   // Get minimum date (today)
@@ -46,14 +51,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, onClose, onSuccess 
   // Load available slots for selected date
   useEffect(() => {
     if (selectedDate) {
-      const allSlots = generateTimeSlots();
-      const bookedAppointments = appointmentStorage.getDoctorAppointmentsByDateAndStatus(
-        doctor.id, 
-        selectedDate, 
-        'confirmed'
-      );
-      const bookedTimes = bookedAppointments.map(apt => apt.time);
-      const available = allSlots.filter(slot => !bookedTimes.includes(slot));
+      // Use the new availability system to get available slots
+      const available = availabilityStorage.getAvailableSlots(doctor.id, selectedDate, 30);
       setAvailableSlots(available);
       
       // Reset selected time if it's no longer available
@@ -274,6 +273,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, onClose, onSuccess 
               onFocus={(e) => e.target.style.borderColor = '#0d9488'}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             />
+            {selectedDate && !isDateAvailable(selectedDate) && (
+              <div style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '6px',
+                fontSize: '14px',
+                color: '#dc2626'
+              }}>
+                ⚠️ Doctor is not available on this date. Please select another date.
+              </div>
+            )}
           </div>
 
           {/* Time Selection */}
