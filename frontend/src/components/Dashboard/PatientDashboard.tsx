@@ -183,16 +183,7 @@ function PatientDashboard() {
                       />
                       <ListItemSecondaryAction>
                         <Box sx={{ display: 'flex', gap: 1, flexDirection: isMobile ? 'column' : 'row' }}>
-                          {appointment.status === 'confirmed' && appointment.type === 'online' && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<VideoCallIcon />}
-                              onClick={() => navigate(`/appointments/${appointment.id}/join`)}
-                            >
-                              Join
-                            </Button>
-                          )}
+
                           {appointment.status === 'payment_pending' && (
                             <Button
                               size="small"

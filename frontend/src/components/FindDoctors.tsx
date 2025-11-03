@@ -468,26 +468,39 @@ const FindDoctors: React.FC = () => {
       return;
     }
 
+    // Check if we're on HTTPS or localhost (required for geolocation)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      showToast('Location services require HTTPS. Please use a secure connection.', 'error');
+      return;
+    }
+
+    // Show loading state
+    showToast('Getting your location...', 'info');
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('Location obtained:', position.coords);
         setUserLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         });
         setLocationPermission('granted');
         showToast('Location detected! Showing nearby doctors', 'success');
+        // Automatically sort by distance when location is obtained
+        setSortBy('distance');
       },
       (error) => {
         setLocationPermission('denied');
+        console.error('Geolocation error:', error);
         switch(error.code) {
           case error.PERMISSION_DENIED:
-            showToast('Location access denied. Please enable location services', 'error');
+            showToast('Location access denied. Please enable location services in your browser settings and refresh the page', 'error');
             break;
           case error.POSITION_UNAVAILABLE:
-            showToast('Location information unavailable', 'error');
+            showToast('Location information unavailable. Please check your GPS settings and try again', 'error');
             break;
           case error.TIMEOUT:
-            showToast('Location request timed out', 'error');
+            showToast('Location request timed out. Please try again', 'error');
             break;
           default:
             showToast('An unknown error occurred while retrieving location', 'error');
@@ -495,9 +508,9 @@ const FindDoctors: React.FC = () => {
         }
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
+        enableHighAccuracy: false, // Changed to false for better compatibility
+        timeout: 10000, // Reduced timeout for faster response
+        maximumAge: 600000 // 10 minutes
       }
     );
   };
@@ -767,7 +780,16 @@ const FindDoctors: React.FC = () => {
   const sortedDoctors = [...filteredDoctors].sort((a, b) => {
     switch (sortBy) {
       case 'rating':
-        return (b.rating || 0) - (a.rating || 0);
+        // Get ratings from reviews if available, otherwise use default rating
+        const aReviews = reviewStorage.getDoctorReviews(a.id);
+        const bReviews = reviewStorage.getDoctorReviews(b.id);
+        const aRating = aReviews.length > 0 
+          ? aReviews.reduce((sum, review) => sum + review.rating, 0) / aReviews.length 
+          : (a.rating || 0);
+        const bRating = bReviews.length > 0 
+          ? bReviews.reduce((sum, review) => sum + review.rating, 0) / bReviews.length 
+          : (b.rating || 0);
+        return bRating - aRating;
       case 'experience':
         // Extract years from experience string (e.g., "5 years" -> 5) or use direct number
         const aExp = typeof a.experience === 'number' ? a.experience : parseInt(a.experience?.match(/\d+/)?.[0] || '0');
@@ -1070,8 +1092,13 @@ const FindDoctors: React.FC = () => {
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button 
-                onClick={getUserLocation}
-                disabled={locationPermission === 'denied'}
+                onClick={() => {
+                  if (locationPermission === 'denied') {
+                    // Reset permission state and try again
+                    setLocationPermission('prompt');
+                  }
+                  getUserLocation();
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1081,41 +1108,65 @@ const FindDoctors: React.FC = () => {
                   border: `1px solid ${userLocation ? '#16a34a' : locationPermission === 'denied' ? '#ef4444' : '#d1d5db'}`,
                   borderRadius: '8px',
                   fontSize: '14px',
-                  cursor: locationPermission === 'denied' ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   color: userLocation ? '#166534' : locationPermission === 'denied' ? '#dc2626' : '#374151',
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  if (locationPermission !== 'denied') {
-                    e.currentTarget.style.backgroundColor = userLocation ? '#bbf7d0' : '#e5e7eb';
-                  }
+                  e.currentTarget.style.backgroundColor = userLocation ? '#bbf7d0' : locationPermission === 'denied' ? '#fee2e2' : '#e5e7eb';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = userLocation ? '#dcfce7' : locationPermission === 'denied' ? '#fef2f2' : '#f3f4f6';
                 }}
+                title={locationPermission === 'denied' ? 'Click to retry location access' : 'Get your current location to find nearby doctors'}
               >
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {userLocation ? 'Location Detected' : locationPermission === 'denied' ? 'Location Denied' : 'Near Me'}
+                {userLocation ? 'Location Detected' : locationPermission === 'denied' ? 'Retry Location' : 'Near Me'}
               </button>
               {userLocation && (
-                <button
-                  onClick={() => setSortBy('distance')}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: sortBy === 'distance' ? '#0d9488' : 'white',
-                    color: sortBy === 'distance' ? 'white' : '#0d9488',
-                    border: '1px solid #0d9488',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Sort by Distance
-                </button>
+                <>
+                  <button
+                    onClick={() => setSortBy('distance')}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: sortBy === 'distance' ? '#0d9488' : 'white',
+                      color: sortBy === 'distance' ? 'white' : '#0d9488',
+                      border: '1px solid #0d9488',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Sort by Distance
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUserLocation(null);
+                      setLocationPermission('prompt');
+                      if (sortBy === 'distance') {
+                        setSortBy('rating');
+                      }
+                      showToast('Location cleared', 'info');
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: '#f3f4f6',
+                      color: '#6b7280',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    title="Clear location"
+                  >
+                    ×
+                  </button>
+                </>
               )}
             </div>
           </div>

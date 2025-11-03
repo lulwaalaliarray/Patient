@@ -195,6 +195,11 @@ export const userStorage = {
     }
   },
 
+  // Check if email exists (alias for userExists for clarity)
+  emailExists: (email: string): boolean => {
+    return userStorage.userExists(email);
+  },
+
   // Check if CPR already exists
   cprExists: (cpr: string): boolean => {
     try {

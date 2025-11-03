@@ -275,8 +275,7 @@ describe('Complete Appointment Booking Flow Integration Tests', () => {
     expect(screen.getByText('Cardiology, Internal Medicine')).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
 
-    // Verify join call button for online appointment
-    expect(screen.getByText('Join Call')).toBeInTheDocument();
+
   });
 
   it('should handle appointment cancellation flow', async () => {

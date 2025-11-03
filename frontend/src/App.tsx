@@ -4,19 +4,19 @@ import { ToastProvider } from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import ScrollToTop from './components/ScrollToTop';
 import WelcomeScreen from './components/WelcomeScreen';
-import Dashboard from './components/Dashboard';
+import SimpleDashboard from './components/SimpleDashboard';
 import FindDoctors from './components/FindDoctors';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import { isLoggedIn } from './utils/navigation';
 import './utils/updateDoctorStatus'; // Auto-activate pending doctors
+import './styles/notes.css'; // Consistent notes styling
 
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import FeaturesPage from './pages/FeaturesPage';
 import PricingPage from './pages/PricingPage';
 import SecurityPage from './pages/SecurityPage';
-import CareersPage from './pages/CareersPage';
 import PressPage from './pages/PressPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
@@ -40,12 +40,18 @@ import PatientAppointments from './components/PatientAppointments';
 import DoctorAppointmentManager from './components/DoctorAppointmentManager';
 import DemoModal from './components/DemoModal';
 import InteractiveVideoDemo from './components/InteractiveVideoDemo';
+import ScreenRecordingDemo from './components/ScreenRecordingDemo';
 import DemoVideo from './components/DemoVideo';
 import Project from './components/Project';
 import UserManagement from './components/UserManagement';
 import NewsletterManagement from './components/NewsletterManagement';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import RegisterPage from './pages/RegisterPage';
+import ProfessionalWebsiteDemo from './components/ProfessionalWebsiteDemo';
+import WebsiteDemoPage from './pages/WebsiteDemoPage';
+
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import DoctorPatientRecords from './components/DoctorPatientRecords';
 
 
 const ChatPage = () => <div style={{ padding: '40px', textAlign: 'center' }}><h2>Chat with Doctor</h2><p>Secure messaging with healthcare providers.</p></div>;
@@ -100,7 +106,7 @@ function App(): JSX.Element {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userLogout', handleLogout);
-    
+
     // Also check periodically as fallback
     const interval = setInterval(checkAuth, 1000);
 
@@ -119,19 +125,19 @@ function App(): JSX.Element {
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/support" element={<SupportPage />} />
-          
+
           {/* Product Pages */}
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/find-doctors" element={<FindDoctors />} />
           <Route path="/doctors" element={<FindDoctors />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/security" element={<SecurityPage />} />
-          
+
           {/* Company Pages */}
-          <Route path="/careers" element={<CareersPage />} />
           <Route path="/press" element={<PressPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:id" element={<BlogPostPage />} />
@@ -150,7 +156,7 @@ function App(): JSX.Element {
               <WritePrescription />
             </ProtectedRoute>
           } />
-          
+
           {/* Support Pages */}
           <Route path="/help" element={<HelpPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
@@ -183,7 +189,7 @@ function App(): JSX.Element {
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute message="Please log in to access your dashboard">
-              {user ? <Dashboard user={user} /> : <div>Loading...</div>}
+              {user ? <SimpleDashboard user={user} /> : <div>Loading...</div>}
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
@@ -202,6 +208,30 @@ function App(): JSX.Element {
               <PastPatients />
             </ProtectedRoute>
           } />
+          <Route path="/patient-records" element={
+            <ProtectedRoute message="Please log in as a doctor to view patient records">
+              {user?.userType === 'doctor' ? (
+                <DoctorPatientRecords doctorId={(user as any).id || user.email || ''} />
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <h2>Access Denied</h2>
+                  <p>Only doctors can access patient records.</p>
+                </div>
+              )}
+            </ProtectedRoute>
+          } />
+          <Route path="/patient-records/:patientId" element={
+            <ProtectedRoute message="Please log in as a doctor to view patient records">
+              {user?.userType === 'doctor' ? (
+                <DoctorPatientRecords doctorId={(user as any).id || user.email || ''} />
+              ) : (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <h2>Access Denied</h2>
+                  <p>Only doctors can access patient records.</p>
+                </div>
+              )}
+            </ProtectedRoute>
+          } />
           <Route path="/leave-review/:doctorId" element={
             <ProtectedRoute message="Please log in to leave a review">
               <LeaveReview />
@@ -216,6 +246,7 @@ function App(): JSX.Element {
           <Route path="/demo" element={<DemoModal />} />
           <Route path="/video-demo" element={<InteractiveVideoDemo />} />
           <Route path="/demo-video" element={<DemoVideo />} />
+          <Route path="/walkthrough" element={<ScreenRecordingDemo />} />
           <Route path="/project" element={<Project />} />
           <Route path="/user-management" element={
             <ProtectedRoute message="Please log in as an admin to manage users">
@@ -233,6 +264,13 @@ function App(): JSX.Element {
             </ProtectedRoute>
           } />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/website-demo" element={<WebsiteDemoPage />} />
+          <Route path="/website-demo-fullscreen" element={
+            <div style={{ width: '100vw', height: '100vh' }}>
+              <ProfessionalWebsiteDemo />
+            </div>
+          } />
+
         </Routes>
       </Router>
     </ToastProvider>

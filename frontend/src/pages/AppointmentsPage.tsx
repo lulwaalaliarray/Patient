@@ -174,9 +174,22 @@ function AppointmentsPage() {
                         </Typography>
                       )}
                       {appointment.consultationNotes && (
-                        <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                          Notes: {appointment.consultationNotes}
-                        </Typography>
+                        <Box sx={{ mt: 1 }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontStyle: 'italic',
+                              backgroundColor: '#f8fafc',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #e5e7eb'
+                            }}
+                          >
+                            <strong>Notes:</strong> {appointment.consultationNotes.length > 80 
+                              ? `${appointment.consultationNotes.substring(0, 80).trim()}...` 
+                              : appointment.consultationNotes}
+                          </Typography>
+                        </Box>
                       )}
                     </Box>
                   }
@@ -200,16 +213,7 @@ function AppointmentsPage() {
                       </Button>
                     )}
                     
-                    {appointment.status === 'confirmed' && appointment.type === 'online' && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        startIcon={<VideoCallIcon />}
-                        onClick={() => navigate(`/appointments/${appointment.id}/join`)}
-                      >
-                        {user?.role === 'doctor' ? 'Start Call' : 'Join Call'}
-                      </Button>
-                    )}
+
                     
                     {appointment.status === 'completed' && user?.role === 'patient' && (
                       <Button

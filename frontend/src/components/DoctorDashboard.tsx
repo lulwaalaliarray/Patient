@@ -27,6 +27,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user }) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [pendingAppointments, setPendingAppointments] = useState<Appointment[]>([]);
   const [pastPatients, setPastPatients] = useState<Appointment[]>([]);
+  const [allPatients, setAllPatients] = useState<any[]>([]);
 
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
@@ -37,6 +38,27 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user }) => {
       loadAppointments();
     }
   }, [user, selectedDate]);
+
+  // Refresh data when component becomes visible (user returns from other pages)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        loadAppointments();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && user) {
+        loadAppointments();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [user]);
 
   const loadAppointments = (dateToLoad?: string) => {
     const doctorId = (user as any).id || user.email;
@@ -58,9 +80,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user }) => {
       });
     setPendingAppointments(allPending);
 
-    // Get past patients (completed appointments)
+    // Get past patients (completed appointments only)
     const pastAppointments = appointmentStorage.getPastAppointments(doctorId);
     setPastPatients(pastAppointments);
+    setAllPatients(pastAppointments);
   };
 
   const handleApproveAppointment = (appointmentId: string) => {
@@ -429,14 +452,31 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user }) => {
                         </div>
                       </div>
                       {appointment.notes && (
-                        <p style={{
-                          fontSize: '12px',
-                          color: '#6b7280',
-                          margin: '0 0 12px 0',
-                          fontStyle: 'italic'
+                        <div style={{
+                          backgroundColor: '#f8fafc',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          margin: '8px 0 12px 0',
+                          border: '1px solid #e5e7eb'
                         }}>
-                          "{appointment.notes}"
-                        </p>
+                          <p style={{
+                            fontSize: '12px',
+                            color: '#6b7280',
+                            margin: 0,
+                            fontStyle: 'italic',
+                            lineHeight: '1.3',
+                            maxHeight: '32px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            <strong>Notes:</strong> {appointment.notes.length > 60 
+                              ? `${appointment.notes.substring(0, 60).trim()}...` 
+                              : appointment.notes}
+                          </p>
+                        </div>
                       )}
                       {appointment.status === 'pending' && (
                         <div style={{
@@ -516,35 +556,113 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user }) => {
                   color: '#111827',
                   margin: 0
                 }}>
-                  Previous Patients
+                  My Patients
                 </h2>
-                <button
-                  onClick={() => navigate('/appointments')}
-                  style={{
-                    padding: '6px 12px',
-                    backgroundColor: '#0d9488',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    cursor: 'pointer'
-                  }}
-                >
-                  View All
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => navigate('/patient-records')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#f59e0b',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                    </svg>
+                    Add Patient
+                  </button>
+                  <button
+                    onClick={() => {
+                      loadAppointments();
+                      showToast('Patient list refreshed', 'success');
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#6366f1',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
+                    </svg>
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => navigate('/appointments')}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#0d9488',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View All
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {pastPatients.length === 0 ? (
+                {allPatients.length === 0 ? (
                   <div style={{
                     padding: '32px',
                     textAlign: 'center',
                     color: '#6b7280'
                   }}>
-                    <p>No previous patients</p>
+                    <p style={{ marginBottom: '16px' }}>No patients have booked appointments yet</p>
+                    <button
+                      onClick={() => navigate('/patient-records')}
+                      style={{
+                        padding: '12px 24px',
+                        backgroundColor: '#0d9488',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        margin: '0 auto'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#0f766e';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#0d9488';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                      </svg>
+                      Manage Patient Records
+                    </button>
                   </div>
                 ) : (
-                  pastPatients.slice(0, 4).map((appointment) => (
+                  allPatients.slice(0, 4).map((appointment) => (
                     <div key={appointment.id} style={{
                       padding: '16px',
                       backgroundColor: '#f9fafb',

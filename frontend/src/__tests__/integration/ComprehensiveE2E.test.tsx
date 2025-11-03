@@ -281,13 +281,7 @@ describe('Comprehensive Frontend End-to-End Tests', () => {
         expect(screen.getByText('Online Consultation')).toBeInTheDocument();
       });
 
-      // Step 5: Join video consultation
-      const joinButton = screen.getByRole('button', { name: /join consultation/i });
-      await user.click(joinButton);
-      
-      await waitFor(() => {
-        expect(mockZoomSdk.init).toHaveBeenCalled();
-      });
+      // Step 5: Join video consultation functionality removed
 
       // Step 6: Test medical history upload during appointment booking
       rerender(<AppointmentBooking doctorId="doctor-1" />);

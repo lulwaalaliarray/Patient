@@ -278,20 +278,62 @@ const MyAppointmentsPage: React.FC = () => {
 
         {/* Notes */}
         {appointment.notes && (
-          <div style={{
+          <div id={`notes-${appointment.id}`} style={{
             padding: '12px',
             backgroundColor: '#f8fafc',
             borderRadius: '8px',
-            marginBottom: '16px'
+            marginBottom: '16px',
+            border: '1px solid #e5e7eb'
           }}>
             <p style={{
               fontSize: '14px',
               color: '#6b7280',
               margin: 0,
-              fontStyle: 'italic'
+              fontStyle: 'italic',
+              lineHeight: '1.4',
+              maxHeight: '60px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical'
             }}>
               <strong>Notes:</strong> {appointment.notes}
             </p>
+            {appointment.notes.length > 100 && (
+              <button
+                onClick={() => {
+                  const element = document.getElementById(`notes-${appointment.id}`);
+                  if (element) {
+                    const p = element.querySelector('p');
+                    if (p) {
+                      if (p.style.maxHeight === '60px') {
+                        p.style.maxHeight = 'none';
+                        p.style.WebkitLineClamp = 'unset';
+                        element.querySelector('button')!.textContent = 'Show less';
+                      } else {
+                        p.style.maxHeight = '60px';
+                        p.style.WebkitLineClamp = '3';
+                        element.querySelector('button')!.textContent = 'Show more';
+                      }
+                    }
+                  }
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#0d9488',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginTop: '4px',
+                  textDecoration: 'underline',
+                  padding: 0
+                }}
+              >
+                Show more
+              </button>
+            )}
           </div>
         )}
 
@@ -326,30 +368,7 @@ const MyAppointmentsPage: React.FC = () => {
             </button>
           )}
           
-          {appointment.status === 'confirmed' && (
-            <button
-              onClick={() => showToast('Video call feature coming soon!', 'info')}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#0d9488',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#0f766e';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#0d9488';
-              }}
-            >
-              Join Call
-            </button>
-          )}
+
 
           {appointment.status === 'completed' && (
             <button

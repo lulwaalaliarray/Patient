@@ -45,6 +45,7 @@ export const routes = {
   home: '/',
   login: '/login',
   signup: '/signup',
+  forgotPassword: '/forgot-password',
   about: '/about',
   contact: '/contact',
   support: '/support',
@@ -63,7 +64,6 @@ export const routes = {
   pricing: '/pricing',
   security: '/security',
   // Company pages
-  careers: '/careers',
   press: '/press',
   blog: '/blog',
   blogPost: (id: string) => `/blog/${id}`,

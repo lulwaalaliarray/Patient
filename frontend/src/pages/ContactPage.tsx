@@ -1,39 +1,91 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
+import { inputValidation } from '../utils/inputValidation';
 
 const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
+    phone: '+973 ',
     subject: '',
     message: '',
     inquiryType: 'general'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let sanitizedValue = value;
     
-    // For phone field, only allow numbers, spaces, hyphens, parentheses, and plus sign
-    if (name === 'phone') {
-      const phoneValue = value.replace(/[^0-9\s\-\(\)\+]/g, '');
-      setFormData({
-        ...formData,
-        [name]: phoneValue
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
+    // Clear any existing error for this field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    
+    // Apply appropriate sanitization based on field type
+    switch (name) {
+      case 'name':
+        sanitizedValue = inputValidation.sanitizeName(value);
+        break;
+      case 'email':
+        sanitizedValue = inputValidation.sanitizeEmail(value);
+        break;
+      case 'phone':
+        sanitizedValue = inputValidation.sanitizeBahrainPhone(value);
+        break;
+      case 'subject':
+        sanitizedValue = inputValidation.sanitizeText(value);
+        break;
+      case 'message':
+        sanitizedValue = inputValidation.sanitizeText(value);
+        break;
+      default:
+        sanitizedValue = inputValidation.sanitizeText(value);
+    }
+    
+    setFormData({
+      ...formData,
+      [name]: sanitizedValue
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!inputValidation.isValidEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (formData.phone.trim() !== '+973 ' && !inputValidation.isValidBahrainPhone(formData.phone)) {
+      newErrors.phone = 'Please enter a valid Bahrain phone number (8 digits)';
+    }
+    
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Subject is required';
+    }
+    
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required';
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
     setIsSubmitting(true);
+    setErrors({});
 
     // Simulate form submission
     setTimeout(() => {
@@ -44,7 +96,7 @@ const ContactPage: React.FC = () => {
       setFormData({
         name: '',
         email: '',
-        phone: '',
+        phone: '+973 ',
         subject: '',
         message: '',
         inquiryType: 'general'
@@ -165,15 +217,25 @@ const ContactPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: `2px solid ${errors.name ? '#ef4444' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = errors.name ? '#ef4444' : '#0d9488'}
+                  onBlur={(e) => e.target.style.borderColor = errors.name ? '#ef4444' : '#e5e7eb'}
                 />
+                {errors.name && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px',
+                    margin: '4px 0 0 0'
+                  }}>
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
               <div style={{ marginBottom: '20px' }}>
@@ -196,15 +258,25 @@ const ContactPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: `2px solid ${errors.email ? '#ef4444' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = errors.email ? '#ef4444' : '#0d9488'}
+                  onBlur={(e) => e.target.style.borderColor = errors.email ? '#ef4444' : '#e5e7eb'}
                 />
+                {errors.email && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px',
+                    margin: '4px 0 0 0'
+                  }}>
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
               <div style={{ marginBottom: '20px' }}>
@@ -215,35 +287,44 @@ const ContactPage: React.FC = () => {
                   color: '#374151',
                   marginBottom: '6px'
                 }}>
-                  Phone Number
+                  Phone Number (Bahrain)
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  onKeyPress={(e) => {
-                    // Allow numbers, spaces, hyphens, parentheses, plus sign, and control keys
-                    const allowedChars = /[0-9\s\-\(\)\+]/;
-                    const isControlKey = e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' || e.key === 'Enter';
-                    
-                    if (!allowedChars.test(e.key) && !isControlKey) {
-                      e.preventDefault();
-                    }
-                  }}
                   placeholder="+973 XXXX XXXX"
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: `2px solid ${errors.phone ? '#ef4444' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = errors.phone ? '#ef4444' : '#0d9488'}
+                  onBlur={(e) => e.target.style.borderColor = errors.phone ? '#ef4444' : '#e5e7eb'}
                 />
+                {errors.phone && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px',
+                    margin: '4px 0 0 0'
+                  }}>
+                    {errors.phone}
+                  </p>
+                )}
+                <p style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  marginTop: '4px',
+                  margin: '4px 0 0 0'
+                }}>
+                  Format: +973 followed by 8 digits (e.g., +973 1234 5678)
+                </p>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
@@ -302,15 +383,25 @@ const ContactPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: `2px solid ${errors.subject ? '#ef4444' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     transition: 'border-color 0.2s',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = errors.subject ? '#ef4444' : '#0d9488'}
+                  onBlur={(e) => e.target.style.borderColor = errors.subject ? '#ef4444' : '#e5e7eb'}
                 />
+                {errors.subject && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px',
+                    margin: '4px 0 0 0'
+                  }}>
+                    {errors.subject}
+                  </p>
+                )}
               </div>
 
               <div style={{ marginBottom: '24px' }}>
@@ -333,7 +424,7 @@ const ContactPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: `2px solid ${errors.message ? '#ef4444' : '#e5e7eb'}`,
                     borderRadius: '8px',
                     fontSize: '16px',
                     transition: 'border-color 0.2s',
@@ -341,9 +432,19 @@ const ContactPage: React.FC = () => {
                     resize: 'vertical',
                     minHeight: '120px'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#0d9488'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  onFocus={(e) => e.target.style.borderColor = errors.message ? '#ef4444' : '#0d9488'}
+                  onBlur={(e) => e.target.style.borderColor = errors.message ? '#ef4444' : '#e5e7eb'}
                 />
+                {errors.message && (
+                  <p style={{
+                    fontSize: '12px',
+                    color: '#ef4444',
+                    marginTop: '4px',
+                    margin: '4px 0 0 0'
+                  }}>
+                    {errors.message}
+                  </p>
+                )}
               </div>
 
               <button

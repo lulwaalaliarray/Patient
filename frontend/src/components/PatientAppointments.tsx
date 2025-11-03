@@ -508,17 +508,28 @@ const PatientAppointments: React.FC = () => {
 
                     {appointment.notes && (
                       <div style={{
-                        backgroundColor: 'white',
+                        backgroundColor: '#f8fafc',
                         padding: '12px',
                         borderRadius: '8px',
-                        marginBottom: '16px'
+                        marginBottom: '16px',
+                        border: '1px solid #e5e7eb'
                       }}>
                         <p style={{
                           fontSize: '14px',
-                          color: '#374151',
-                          margin: 0
+                          color: '#6b7280',
+                          margin: 0,
+                          fontStyle: 'italic',
+                          lineHeight: '1.4',
+                          maxHeight: '42px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
                         }}>
-                          <strong>Notes:</strong> {appointment.notes}
+                          <strong>Notes:</strong> {appointment.notes.length > 80 
+                            ? `${appointment.notes.substring(0, 80).trim()}...` 
+                            : appointment.notes}
                         </p>
                       </div>
                     )}

@@ -214,16 +214,7 @@ function DoctorDashboard() {
                         }
                       />
                       <ListItemSecondaryAction>
-                        {appointment.type === 'online' && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<VideoCallIcon />}
-                            onClick={() => navigate(`/appointments/${appointment.id}/join`)}
-                          >
-                            Start Call
-                          </Button>
-                        )}
+
                       </ListItemSecondaryAction>
                     </ListItem>
                   ))}

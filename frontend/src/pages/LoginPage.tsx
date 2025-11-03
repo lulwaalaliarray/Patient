@@ -227,7 +227,7 @@ const LoginPage: React.FC = () => {
                 Remember me
               </label>
               <Link
-                to="#"
+                to={routes.forgotPassword}
                 style={{
                   fontSize: '14px',
                   color: '#0d9488',

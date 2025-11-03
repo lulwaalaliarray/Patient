@@ -288,12 +288,7 @@ describe('Comprehensive Frontend Validation Tests', () => {
         expect(screen.getByText('Upcoming Appointments')).toBeInTheDocument();
       });
       
-      const joinButton = screen.getByRole('button', { name: /join consultation/i });
-      await user.click(joinButton);
-      
-      await waitFor(() => {
-        expect(mockZoomSdk.init).toHaveBeenCalled();
-      });
+      // Join consultation functionality removed
 
       // Requirement 7: Medical History Management
       rerender(<MedicalHistoryPage />);

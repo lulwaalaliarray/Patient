@@ -87,5 +87,55 @@ export const inputValidation = {
     }
 
     return sanitized !== text;
+  },
+
+  // Validate email format
+  isValidEmail: (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+
+  // Sanitize and format Bahrain phone number
+  sanitizeBahrainPhone: (phone: string): string => {
+    // Remove all non-digits first
+    let digits = phone.replace(/\D/g, '');
+    
+    // If it starts with 973, keep it
+    // If it starts with 0, remove the 0 and add 973
+    // If it's 8 digits, add 973 prefix
+    if (digits.startsWith('973')) {
+      digits = digits.substring(3);
+    } else if (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    
+    // Ensure we only have 8 digits after the country code
+    if (digits.length > 8) {
+      digits = digits.substring(0, 8);
+    }
+    
+    // Format as +973 XXXX XXXX
+    if (digits.length === 8) {
+      return `+973 ${digits.substring(0, 4)} ${digits.substring(4)}`;
+    } else if (digits.length > 0) {
+      return `+973 ${digits}`;
+    }
+    
+    return '+973 ';
+  },
+
+  // Validate Bahrain phone number format
+  isValidBahrainPhone: (phone: string): boolean => {
+    // Remove all non-digits
+    const digits = phone.replace(/\D/g, '');
+    
+    // Should be exactly 11 digits (973 + 8 digits) or 8 digits (without country code)
+    if (digits.length === 11 && digits.startsWith('973')) {
+      return true;
+    } else if (digits.length === 8) {
+      return true;
+    }
+    
+    return false;
   }
 };

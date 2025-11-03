@@ -100,29 +100,7 @@ const HelpPage: React.FC = () => {
     ]
   };
 
-  const contactOptions = [
-    {
-      title: 'Live Chat',
-      description: 'Get instant help from our support team',
-      icon: '💬',
-      availability: '24/7',
-      action: 'Start Chat'
-    },
-    {
-      title: 'Email Support',
-      description: 'Send us a detailed message',
-      icon: '✉️',
-      availability: 'Response within 24 hours',
-      action: 'Send Email'
-    },
-    {
-      title: 'Phone Support',
-      description: 'Speak directly with our team',
-      icon: '📞',
-      availability: 'Sun-Thu: 8AM-8PM',
-      action: 'Call Now'
-    }
-  ];
+
 
   return (
     <Layout title="Help Center" subtitle="Get the support you need">
@@ -293,103 +271,7 @@ const HelpPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Contact Support */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          padding: '48px 32px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
-        }}>
-          <h2 style={{
-            fontSize: '32px',
-            fontWeight: '700',
-            color: '#111827',
-            textAlign: 'center',
-            marginBottom: '16px'
-          }}>
-            Still need help?
-          </h2>
-          <p style={{
-            fontSize: '18px',
-            color: '#6b7280',
-            textAlign: 'center',
-            marginBottom: '48px'
-          }}>
-            Our support team is here to help you with any questions or issues.
-          </p>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '24px'
-          }}>
-            {contactOptions.map((option, index) => (
-              <div key={index} style={{
-                textAlign: 'center',
-                padding: '32px 24px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '12px',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.backgroundColor = '#f0fdfa';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e7eb';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}>
-                <div style={{
-                  fontSize: '48px',
-                  marginBottom: '16px'
-                }}>
-                  {option.icon}
-                </div>
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#111827',
-                  marginBottom: '8px'
-                }}>
-                  {option.title}
-                </h3>
-                <p style={{
-                  fontSize: '16px',
-                  color: '#6b7280',
-                  marginBottom: '8px'
-                }}>
-                  {option.description}
-                </p>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#0d9488',
-                  fontWeight: '500',
-                  marginBottom: '20px'
-                }}>
-                  {option.availability}
-                </p>
-                <button style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#0d9488',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0f766e';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#0d9488';
-                }}>
-                  {option.action}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+
       </div>
     </Layout>
   );
