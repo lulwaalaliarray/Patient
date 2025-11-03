@@ -63,13 +63,11 @@ const Footer: React.FC = () => {
     product: [
       { name: 'Features', href: routes.features },
       { name: 'Find Doctors', href: routes.findDoctors },
-      { name: 'Video Demo', href: '/video-demo' },
       { name: 'Security', href: routes.security }
     ],
     company: [
       { name: 'About Us', href: routes.about },
       { name: 'Careers', href: routes.careers },
-      { name: 'Interactive Demo', href: '/demo' },
       { name: 'Blog', href: routes.blog }
     ],
     support: [
@@ -128,39 +126,7 @@ const Footer: React.FC = () => {
               Bahrain's trusted healthcare platform. Connect with licensed professionals, manage appointments, and take control of your health journey across the Kingdom.
             </p>
             
-            {/* Social Links */}
-            <div style={{ display: 'flex', gap: '16px' }}>
-              {['twitter', 'facebook', 'linkedin', 'instagram'].map((social) => (
-                <a
-                  key={social}
-                  href={`#${social}`}
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    backgroundColor: '#374151',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#9ca3af',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#0d9488';
-                    e.currentTarget.style.color = 'white';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#374151';
-                    e.currentTarget.style.color = '#9ca3af';
-                  }}
-                >
-                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/>
-                  </svg>
-                </a>
-              ))}
-            </div>
+
           </div>
 
           {/* Product Links */}

@@ -6,12 +6,6 @@ interface DoctorPatientRecordsProps {
   doctorId: string;
 }
 
-// Helper function to get all registered patients
-const getAllRegisteredPatients = (): any[] => {
-  const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
-  return users.filter((user: any) => user.userType === 'patient');
-};
-
 // Helper function to get patients the doctor has appointments with (all appointments, not just completed)
 const getSeenPatientIds = (doctorId: string): string[] => {
   const appointments = JSON.parse(localStorage.getItem('patientcare_appointments') || '[]');
@@ -19,113 +13,7 @@ const getSeenPatientIds = (doctorId: string): string[] => {
   return [...new Set(doctorAppointments.map((apt: any) => apt.patientId || apt.patientEmail))] as string[];
 };
 
-// Enhanced function to automatically create patient records ONLY for patients with appointments
-const createPatientRecordsFromAppointments = (doctorId: string): void => {
-  try {
-    console.log('Creating patient records for doctor:', doctorId);
-    
-    const { appointmentStorage } = require('../utils/appointmentStorage');
-    const appointments = appointmentStorage.getAllAppointments();
-    const users = getAllRegisteredPatients();
-    const doctorAppointments = appointments.filter((apt: any) => apt.doctorId === doctorId);
-    
-    console.log('Total appointments:', appointments.length);
-    console.log('Doctor appointments:', doctorAppointments.length);
-    console.log('Registered patients:', users.length);
-    
-    // Only create records for patients who have appointments with this doctor
-    doctorAppointments.forEach((appointment: any) => {
-      console.log('Processing appointment:', appointment.patientName, appointment.patientEmail);
-      
-      // Try multiple ways to find existing record
-      let existingRecord = patientRecordsStorage.getPatientRecordByPatientAndDoctor(
-        appointment.patientId || appointment.patientEmail,
-        doctorId
-      );
-      
-      // Also try with email if patientId didn't work
-      if (!existingRecord && appointment.patientEmail) {
-        existingRecord = patientRecordsStorage.getPatientRecordByPatientAndDoctor(
-          appointment.patientEmail,
-          doctorId
-        );
-      }
 
-      if (!existingRecord) {
-        console.log('No existing record found, creating new record for:', appointment.patientName);
-        
-        // Find the actual user data
-        const userData = users.find((user: any) => 
-          user.userType === 'patient' && 
-          (user.id === appointment.patientId || 
-           user.email === appointment.patientEmail ||
-           user.name === appointment.patientName)
-        );
-
-        if (userData) {
-          console.log('Found user data, creating comprehensive record');
-          // Create comprehensive patient record from user data
-          try {
-            patientRecordsStorage.createPatientRecordFromUserData({
-              patientId: userData.id || userData.email,
-              patientName: userData.name,
-              patientEmail: userData.email,
-              cprNumber: userData.cpr || '',
-              phoneNumber: userData.phone || '',
-              doctorId: doctorId
-            });
-            console.log('Successfully created comprehensive record');
-          } catch (error) {
-            console.error('Error creating comprehensive record:', error);
-          }
-        } else {
-          console.log('No user data found, creating basic record');
-          // Fallback to basic record creation if user data not found
-          try {
-            patientRecordsStorage.createPatientRecordFromAppointment({
-              patientId: appointment.patientId || appointment.patientEmail,
-              patientName: appointment.patientName,
-              patientEmail: appointment.patientEmail,
-              doctorId: doctorId
-            });
-            console.log('Successfully created basic record');
-          } catch (error) {
-            console.error('Error creating basic record:', error);
-          }
-        }
-      } else {
-        console.log('Existing record found for:', appointment.patientName);
-      }
-    });
-
-    // Update visit counts and last visit dates for existing records
-    doctorAppointments.forEach((appointment: any) => {
-      const record = patientRecordsStorage.getPatientRecordByPatientAndDoctor(
-        appointment.patientId || appointment.patientEmail,
-        doctorId
-      );
-      if (record) {
-        // Count actual appointments for this patient with this doctor
-        const patientAppointments = doctorAppointments.filter((apt: any) => 
-          (apt.patientId === appointment.patientId || apt.patientEmail === appointment.patientEmail)
-        );
-        
-        const completedAppointments = patientAppointments.filter((apt: any) => apt.status === 'completed');
-        const lastCompletedAppointment = completedAppointments
-          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-        
-        patientRecordsStorage.updatePatientRecord(record.id, {
-          numberOfVisits: patientAppointments.length,
-          lastVisit: lastCompletedAppointment ? lastCompletedAppointment.date : record.lastVisit
-        });
-      }
-    });
-    
-    console.log('Finished creating patient records');
-  } catch (error) {
-    console.error('Error creating patient records from appointments:', error);
-  }
-};
 
 const DoctorPatientRecords: React.FC<DoctorPatientRecordsProps> = ({ doctorId }) => {
   const { patientId } = useParams<{ patientId: string }>();
@@ -141,92 +29,154 @@ const DoctorPatientRecords: React.FC<DoctorPatientRecordsProps> = ({ doctorId })
   const [loading, setLoading] = useState(true);
   const [isViewingSinglePatient, setIsViewingSinglePatient] = useState(false);
 
+
+
   useEffect(() => {
     loadPatients();
   }, [doctorId]);
 
   const loadPatients = () => {
     setLoading(true);
+
     
     try {
-      // Ensure demo data is initialized
+      // Initialize demo data
       const { appointmentStorage } = require('../utils/appointmentStorage');
       const { initializeDemoUsers } = require('../utils/userStorage');
       
-      // Initialize demo users and appointments
       initializeDemoUsers();
-      appointmentStorage.getAllAppointments(); // This will initialize default appointments
-      
-      // Initialize demo prescriptions
-      const { initializeDemoPrescriptions } = require('../utils/prescriptionStorage');
-      initializeDemoPrescriptions();
-      
-      // Auto-create patient records ONLY for patients with appointments
-      createPatientRecordsFromAppointments(doctorId);
-      
-      // Get all patient records for this doctor
-      let allRecords = patientRecordsStorage.getDoctorPatientRecords(doctorId);
-      
-      // If no records found, try to force create them from appointments
-      if (allRecords.length === 0) {
-        console.log('No patient records found, forcing creation from appointments');
-        const appointments = appointmentStorage.getAllAppointments();
-        const doctorAppointments = appointments.filter((apt: any) => apt.doctorId === doctorId);
-        
-        // Force create basic records for each appointment
-        doctorAppointments.forEach((appointment: any) => {
-          try {
-            patientRecordsStorage.createPatientRecordFromAppointment({
-              patientId: appointment.patientId || appointment.patientEmail,
-              patientName: appointment.patientName,
-              patientEmail: appointment.patientEmail,
-              doctorId: doctorId
-            });
-          } catch (error) {
-            console.log('Could not create record for:', appointment.patientName, error);
-          }
-        });
-        
-        // Reload records after forced creation
-        allRecords = patientRecordsStorage.getDoctorPatientRecords(doctorId);
-        console.log('After forced creation, found records:', allRecords.length);
+      let allAppointments = appointmentStorage.getAllAppointments();
+
+      // Force refresh demo data if no appointments exist
+      if (allAppointments.length === 0) {
+        appointmentStorage.refreshAppointments();
+        allAppointments = appointmentStorage.getAllAppointments();
       }
       
-      // Get appointments for this doctor
-      const appointments = appointmentStorage.getAllAppointments();
-      const doctorAppointments = appointments.filter((apt: any) => apt.doctorId === doctorId);
+      // Map the logged-in doctor to the correct demo doctor ID
+      let actualDoctorId = doctorId;
       
-      // Filter records to only include patients who have appointments with this doctor
-      let filteredRecords = allRecords.filter(record => {
-        // Check if this patient has any appointments with this doctor
-        const hasAppointment = doctorAppointments.some((apt: any) => 
-          apt.patientId === record.patientGlobalId ||
-          apt.patientEmail === record.contactInfo.email ||
-          apt.patientId === record.id ||
-          apt.patientName === record.fullName ||
-          // Also check by patient name as a fallback
-          (apt.patientName && record.fullName && apt.patientName === record.fullName)
-        );
-        return hasAppointment;
+      // Check if this is a demo doctor email and map to the correct ID
+      const doctorEmailToIdMap: { [key: string]: string } = {
+        'doctor@patientcare.bh': 'doctor-001',
+        'fatima.doctor@patientcare.bh': 'doctor-002', 
+        'mohammed.doctor@patientcare.bh': 'doctor-003',
+        'aisha.doctor@patientcare.bh': 'doctor-004',
+        'khalid.doctor@patientcare.bh': 'doctor-005'
+      };
+      
+      if (doctorEmailToIdMap[doctorId]) {
+        actualDoctorId = doctorEmailToIdMap[doctorId];
+        console.log('Mapped doctor email to ID:', doctorId, '->', actualDoctorId);
+      }
+      
+      // Step 1: Get all appointments for the current doctor
+      const doctorAppointments = allAppointments.filter((appointment: any) => {
+        return appointment.doctorId === actualDoctorId || 
+               appointment.doctorId === doctorId ||
+               appointment.doctorEmail === doctorId;
       });
       
-      // If no filtered records but we have appointments, show all records for this doctor
-      // This handles cases where the matching logic might have issues
-      if (filteredRecords.length === 0 && doctorAppointments.length > 0) {
-        filteredRecords = allRecords;
+
+
+      
+      if (doctorAppointments.length === 0) {
+        setPatients([]);
+        setLoading(false);
+        return;
       }
       
-      // If viewing a specific patient, filter further
+      // Step 2: Extract unique patient IDs from those appointments
+      const patientIds = [...new Set(doctorAppointments.map((a: any) => a.patientId || a.patientEmail))];
+
+      
+      // Step 3: Get all registered users (patients)
+      const allUsers = JSON.parse(localStorage.getItem('registeredUsers') || '[]');
+      const allPatients = allUsers.filter((user: any) => user.userType === 'patient');
+
+      
+      // Step 4: Build patient records for patients who have appointments with this doctor
+      const patientRecords: PatientRecord[] = patientIds.map((patientId: any) => {
+        // Find the patient's user data
+        const patientUser = allPatients.find((user: any) => 
+          user.id === patientId || user.email === patientId
+        );
+        
+        // Get all appointments for this patient with this doctor
+        const patientAppointments = doctorAppointments.filter((apt: any) => 
+          (apt.patientId === patientId || apt.patientEmail === patientId)
+        );
+        
+        // Calculate visit statistics
+        const totalVisits = patientAppointments.length;
+        const completedAppointments = patientAppointments.filter((apt: any) => apt.status === 'completed');
+        const lastVisit = completedAppointments.length > 0 
+          ? completedAppointments.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
+          : null;
+        
+        // Get or create patient record from storage
+        let existingRecord = patientRecordsStorage.getPatientRecordByPatientAndDoctor(patientId, actualDoctorId);
+        
+        if (!existingRecord && patientUser) {
+          // Create new record from user data
+          existingRecord = patientRecordsStorage.createPatientRecordFromUserData({
+            patientId: patientUser.id || patientUser.email,
+            patientName: patientUser.name,
+            patientEmail: patientUser.email,
+            cprNumber: patientUser.cpr || '',
+            phoneNumber: patientUser.phone || '',
+            doctorId: actualDoctorId
+          });
+        } else if (!existingRecord) {
+          // Create basic record from appointment data
+          const firstAppointment = patientAppointments[0];
+          existingRecord = patientRecordsStorage.createPatientRecordFromAppointment({
+            patientId: patientId,
+            patientName: firstAppointment.patientName,
+            patientEmail: firstAppointment.patientEmail,
+            doctorId: actualDoctorId
+          });
+        }
+        
+        // Update the record with current visit data
+        if (existingRecord) {
+          patientRecordsStorage.updatePatientRecord(existingRecord.id, {
+            numberOfVisits: totalVisits,
+            lastVisit: lastVisit
+          });
+          
+          // Return updated record
+          return {
+            ...existingRecord,
+            numberOfVisits: totalVisits,
+            lastVisit: lastVisit
+          };
+        }
+        
+        return null;
+      }).filter(Boolean) as PatientRecord[];
+      
+
+      
+      // Sort by most recent activity
+      patientRecords.sort((a, b) => {
+        const aDate = new Date(a.lastVisit || a.dateCreated).getTime();
+        const bDate = new Date(b.lastVisit || b.dateCreated).getTime();
+        return bDate - aDate;
+      });
+      
+      // Handle single patient view
       if (patientId) {
-        filteredRecords = filteredRecords.filter(record => 
+        const filteredRecords = patientRecords.filter(record => 
           record.id === patientId || record.contactInfo.email === patientId
         );
+        setPatients(filteredRecords);
         setIsViewingSinglePatient(true);
       } else {
+        setPatients(patientRecords);
         setIsViewingSinglePatient(false);
       }
       
-      setPatients(filteredRecords);
     } catch (error) {
       console.error('Error loading patients:', error);
       setPatients([]);
@@ -296,12 +246,25 @@ const DoctorPatientRecords: React.FC<DoctorPatientRecordsProps> = ({ doctorId })
   };
 
   const handleExport = () => {
-    const jsonData = patientRecordsStorage.exportPatientRecords(doctorId);
+    // Export only the currently displayed patients (those with appointments)
+    const exportData = {
+      doctorId: doctorId,
+      exportDate: new Date().toISOString(),
+      totalPatients: patients.length,
+      totalVisits: patients.reduce((sum, p) => sum + p.numberOfVisits, 0),
+      patients: patients.map(patient => ({
+        ...patient,
+        // Include appointment history for context
+        appointmentHistory: patientAppointments.length > 0 ? patientAppointments : []
+      }))
+    };
+    
+    const jsonData = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `patient-records-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `patient-records-${doctorId}-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -593,14 +556,14 @@ const DoctorPatientRecords: React.FC<DoctorPatientRecordsProps> = ({ doctorId })
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0' }}>
-              {isViewingSinglePatient ? 'Access Denied' : 'No patient records found'}
+              {isViewingSinglePatient ? 'Access Denied' : 'No patients found'}
             </h3>
             <p style={{ margin: '0 0 16px 0' }}>
               {isViewingSinglePatient 
                 ? 'You can only view records for patients who have appointments with you.'
                 : searchQuery 
-                ? 'Try adjusting your search criteria' 
-                : 'Patient records are automatically created when patients book appointments with you.'
+                ? 'No patients match your search criteria. Try adjusting your search terms.' 
+                : 'No patients have booked appointments with you yet. Patient records are automatically created when patients book appointments.'
               }
             </p>
             {!isViewingSinglePatient && !searchQuery && (
@@ -1449,7 +1412,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                 CPR: {editedPatient.cprNumber}
               </p>
               {isEditing && (
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
                   <div>
                     <label style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>Age:</label>
                     <input
@@ -1457,7 +1420,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                       value={editedPatient.age || ''}
                       onChange={(e) => setEditedPatient({
                         ...editedPatient,
-                        age: parseInt(e.target.value) || undefined
+                        age: parseInt(e.target.value) || 0
                       })}
                       style={{
                         padding: '4px 8px',
@@ -1639,7 +1602,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                             ...editedPatient.physicalInfo,
                             height: {
                               ...editedPatient.physicalInfo.height,
-                              unit: e.target.value as 'cm' | 'ft'
+                              unit: e.target.value as 'cm' | 'ft/in'
                             }
                           }
                         })}
@@ -1651,7 +1614,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                         }}
                       >
                         <option value="cm">cm</option>
-                        <option value="ft">ft</option>
+                        <option value="ft/in">ft/in</option>
                       </select>
                     </div>
                   ) : (
@@ -1732,9 +1695,32 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
               }}>
                 <div style={{ marginBottom: '12px' }}>
                   <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>Phone:</span>
-                  <span style={{ fontSize: '16px', color: '#111827', marginLeft: '8px' }}>
-                    {patient.contactInfo.phoneNumber}
-                  </span>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editedPatient.contactInfo.phoneNumber}
+                      onChange={(e) => setEditedPatient({
+                        ...editedPatient,
+                        contactInfo: {
+                          ...editedPatient.contactInfo,
+                          phoneNumber: e.target.value
+                        }
+                      })}
+                      style={{
+                        marginLeft: '8px',
+                        padding: '4px 8px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        width: '150px'
+                      }}
+                      placeholder="+973 XXXX XXXX"
+                    />
+                  ) : (
+                    <span style={{ fontSize: '16px', color: '#111827', marginLeft: '8px' }}>
+                      {patient.contactInfo.phoneNumber || 'Not provided'}
+                    </span>
+                  )}
                 </div>
                 <div style={{ marginBottom: '12px' }}>
                   <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>Email:</span>
@@ -1744,11 +1730,89 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                 </div>
                 <div>
                   <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>Address:</span>
-                  <div style={{ fontSize: '16px', color: '#111827', marginTop: '4px' }}>
-                    {patient.contactInfo.address.street}<br />
-                    {patient.contactInfo.address.city}, {patient.contactInfo.address.governorate}<br />
-                    {patient.contactInfo.address.postalCode}
-                  </div>
+                  {isEditing ? (
+                    <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input
+                        type="text"
+                        value={editedPatient.contactInfo.address.street}
+                        onChange={(e) => setEditedPatient({
+                          ...editedPatient,
+                          contactInfo: {
+                            ...editedPatient.contactInfo,
+                            address: {
+                              ...editedPatient.contactInfo.address,
+                              street: e.target.value
+                            }
+                          }
+                        })}
+                        style={{
+                          padding: '6px 8px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                        placeholder="Street address"
+                      />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          value={editedPatient.contactInfo.address.city}
+                          onChange={(e) => setEditedPatient({
+                            ...editedPatient,
+                            contactInfo: {
+                              ...editedPatient.contactInfo,
+                              address: {
+                                ...editedPatient.contactInfo.address,
+                                city: e.target.value
+                              }
+                            }
+                          })}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}
+                          placeholder="City"
+                        />
+                        <select
+                          value={editedPatient.contactInfo.address.governorate}
+                          onChange={(e) => setEditedPatient({
+                            ...editedPatient,
+                            contactInfo: {
+                              ...editedPatient.contactInfo,
+                              address: {
+                                ...editedPatient.contactInfo.address,
+                                governorate: e.target.value
+                              }
+                            }
+                          })}
+                          style={{
+                            padding: '6px 8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}
+                        >
+                          <option value="">Governorate</option>
+                          <option value="Capital">Capital</option>
+                          <option value="Muharraq">Muharraq</option>
+                          <option value="Northern">Northern</option>
+                          <option value="Southern">Southern</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '16px', color: '#111827', marginTop: '4px' }}>
+                      {patient.contactInfo.address.street && `${patient.contactInfo.address.street}`}
+                      {patient.contactInfo.address.street && <br />}
+                      {patient.contactInfo.address.city || 'City not provided'}
+                      {patient.contactInfo.address.governorate && `, ${patient.contactInfo.address.governorate}`}
+                      {patient.contactInfo.address.postalCode && <br />}
+                      {patient.contactInfo.address.postalCode}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1960,7 +2024,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                       🩺 Appointment Notes & Symptoms
                     </h5>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {appointments.map((appointment: any, index: number) => (
+                      {appointments.map((appointment: any) => (
                         <div
                           key={appointment.id}
                           style={{
@@ -2018,7 +2082,7 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, onClos
                       💊 Prescription History & Diagnoses
                     </h5>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {prescriptions.map((prescription: any, index: number) => (
+                      {prescriptions.map((prescription: any) => (
                         <div
                           key={prescription.id}
                           style={{

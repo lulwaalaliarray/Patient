@@ -70,7 +70,7 @@ const LoginPage: React.FC = () => {
 
         showToast(welcomeMessage, 'success');
 
-        // Check for redirect destination
+        // Check for redirect destination - always send to dashboard for both patients and doctors
         const redirectTo = localStorage.getItem('redirectAfterLogin') || routes.dashboard;
         localStorage.removeItem('redirectAfterLogin');
 
@@ -176,7 +176,7 @@ const LoginPage: React.FC = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder={formData.userType === 'patient' ? 'patient@patientcare.bh' : 'doctor@patientcare.bh'}
+                placeholder={formData.userType === 'patient' ? 'Enter your email address' : 'Enter your professional email'}
                 style={{
                   width: '100%',
                   padding: '12px 16px',
@@ -289,67 +289,7 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            backgroundColor: formData.userType === 'patient' ? '#f0f9ff' : '#f0fdf4',
-            borderRadius: '8px',
-            border: `1px solid ${formData.userType === 'patient' ? '#e0f2fe' : '#dcfce7'}`
-          }}>
-            <p style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: formData.userType === 'patient' ? '#0369a1' : '#166534',
-              marginBottom: '8px'
-            }}>
-              {formData.userType === 'patient' ? 'Patient Demo Login:' : 'Doctor Demo Login:'}
-            </p>
-            <p style={{
-              fontSize: '13px',
-              color: formData.userType === 'patient' ? '#0369a1' : '#166534',
-              margin: '2px 0'
-            }}>
-              Email: {formData.userType === 'patient' ? 'patient@patientcare.bh' : 'doctor@patientcare.bh'}
-            </p>
-            <p style={{
-              fontSize: '13px',
-              color: formData.userType === 'patient' ? '#0369a1' : '#166534',
-              margin: '2px 0'
-            }}>
-              Password: {formData.userType === 'patient' ? 'password' : 'doctor123'}
-            </p>
-            {formData.userType === 'doctor' && (
-              <p style={{
-                fontSize: '12px',
-                color: '#166534',
-                margin: '8px 0 0 0',
-                fontStyle: 'italic'
-              }}>
-                🩺 Verified NHRA-licensed physician
-              </p>
-            )}
-          </div>
 
-          {/* User Statistics */}
-          {userStats.total > 2 && (
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0'
-            }}>
-              <p style={{
-                fontSize: '12px',
-                color: '#64748b',
-                textAlign: 'center',
-                margin: 0
-              }}>
-                📊 {userStats.total} registered users ({userStats.patients} patients, {userStats.doctors} doctors)
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Sign Up Link */}

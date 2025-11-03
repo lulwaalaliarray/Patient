@@ -433,6 +433,37 @@ class PatientRecordsStorage {
     return updatedRecord;
   }
 
+  // Sync patient records with appointment data for a specific doctor
+  syncPatientRecordsWithAppointments(doctorId: string): void {
+    try {
+      const appointments = JSON.parse(localStorage.getItem('patientcare_appointments') || '[]');
+      const doctorAppointments = appointments.filter((apt: any) => apt.doctorId === doctorId);
+      const allRecords = this.getDoctorPatientRecords(doctorId);
+      
+      // Update each record with real appointment data
+      allRecords.forEach(record => {
+        const patientAppointments = doctorAppointments.filter((apt: any) => 
+          apt.patientId === record.patientGlobalId ||
+          apt.patientEmail === record.contactInfo.email ||
+          apt.patientId === record.id ||
+          apt.patientName === record.fullName
+        );
+        
+        const completedAppointments = patientAppointments.filter((apt: any) => apt.status === 'completed');
+        const lastCompletedAppointment = completedAppointments
+          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        
+        // Update visit count and last visit
+        this.updatePatientRecord(record.id, {
+          numberOfVisits: patientAppointments.length,
+          lastVisit: lastCompletedAppointment ? lastCompletedAppointment.date : record.lastVisit
+        });
+      });
+    } catch (error) {
+      console.error('Error syncing patient records with appointments:', error);
+    }
+  }
+
   // Delete a patient record
   deletePatientRecord(patientId: string): boolean {
     const allRecords = this.getAllPatientRecords();

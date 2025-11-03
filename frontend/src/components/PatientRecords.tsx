@@ -172,6 +172,8 @@ const PatientRecords: React.FC = () => {
         
 
 
+
+
         {/* DoctorPatientRecords with error handling */}
         <ErrorBoundary>
           <DoctorPatientRecords doctorId={user.id || user.email || user.name || 'unknown'} />

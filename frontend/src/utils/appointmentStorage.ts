@@ -210,13 +210,25 @@ export const appointmentStorage = {
       
       if (index === -1) return false;
       
-      appointments[index] = {
+      const updatedAppointment = {
         ...appointments[index],
         ...updates,
         updatedAt: new Date().toISOString()
       };
       
+      appointments[index] = updatedAppointment;
       localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(appointments));
+      
+      // Sync patient records when appointment is completed
+      if (updates.status === 'completed') {
+        try {
+          const { patientRecordsStorage } = require('./patientRecordsStorage');
+          patientRecordsStorage.syncPatientRecordsWithAppointments(updatedAppointment.doctorId);
+        } catch (error) {
+          console.error('Error syncing patient records after appointment completion:', error);
+        }
+      }
+      
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
