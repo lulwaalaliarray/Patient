@@ -137,7 +137,7 @@ const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
                   {averageRating.toFixed(1)}
                 </span>
                 <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  ({doctorReviews.length || doctor.reviewCount || 0} reviews)
+                  ({doctorReviews.length} reviews)
                 </span>
               </div>
               <p style={{
@@ -197,7 +197,7 @@ const DoctorDetailsModal: React.FC<DoctorDetailsModalProps> = ({
               fontWeight: '500'
             }}
           >
-            Reviews ({doctorReviews.length || doctor.reviewCount || 0})
+            Reviews ({doctorReviews.length})
           </button>
         </div>
 

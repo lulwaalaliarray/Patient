@@ -115,7 +115,7 @@ const Header: React.FC = () => {
 
           
           <button 
-            onClick={() => handleNavClick(user ? routes.dashboard : routes.home)}
+            onClick={() => handleNavClick(routes.home)}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -163,7 +163,7 @@ const Header: React.FC = () => {
         className="desktop-nav"
         >
           <button 
-            onClick={() => handleNavClick(user ? routes.dashboard : routes.home)}
+            onClick={() => handleNavClick(routes.home)}
             style={{ 
               color: '#6b7280', 
               background: 'none',
@@ -176,7 +176,7 @@ const Header: React.FC = () => {
             onMouseEnter={(e) => e.currentTarget.style.color = '#0d9488'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
           >
-            {user ? 'Dashboard' : 'Home'}
+            Home
           </button>
           {user && (
             <>
@@ -607,9 +607,7 @@ const Header: React.FC = () => {
         className="mobile-menu"
         >
           <nav style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <button onClick={() => handleNavClick(user ? routes.dashboard : routes.home)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>
-              {user ? 'Dashboard' : 'Home'}
-            </button>
+            <button onClick={() => handleNavClick(routes.home)} style={{ color: '#6b7280', background: 'none', border: 'none', textAlign: 'left', fontWeight: '500', cursor: 'pointer' }}>Home</button>
             {user && (
               <>
 

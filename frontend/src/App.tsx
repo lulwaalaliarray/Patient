@@ -30,8 +30,7 @@ import EnhancedAvailability from './components/EnhancedAvailability';
 import WritePrescription from './components/WritePrescription';
 import DoctorProfilePage from './pages/DoctorProfilePage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
-import PatientRecords from './components/PatientRecords';
-import DoctorPatientRecords from './components/DoctorPatientRecords';
+
 import ViewPrescriptions from './components/ViewPrescriptions';
 import PersonalMedicalRecords from './components/PersonalMedicalRecords';
 import PastPatients from './components/PastPatients';
@@ -52,18 +51,7 @@ import RegisterPage from './pages/RegisterPage';
 const ChatPage = () => <div style={{ padding: '40px', textAlign: 'center' }}><h2>Chat with Doctor</h2><p>Secure messaging with healthcare providers.</p></div>;
 const SupportPage = () => <div style={{ padding: '40px', textAlign: 'center' }}><h2>Support Center</h2><p>Get help with PatientCare platform.</p></div>;
 
-// Wrapper component to get doctor ID from current user
-const DoctorPatientRecordsWrapper: React.FC = () => {
-  const userData = localStorage.getItem('userData');
-  if (!userData) {
-    return <div>Please log in to view patient records</div>;
-  }
-  
-  const user = JSON.parse(userData);
-  const doctorId = user.id || user.email;
-  
-  return <DoctorPatientRecords doctorId={doctorId} />;
-};
+
 
 function App(): JSX.Element {
   const [user, setUser] = useState<{ name: string; email?: string; userType?: string; avatar?: string } | null>(null);
@@ -203,16 +191,7 @@ function App(): JSX.Element {
               <ProfilePage />
             </ProtectedRoute>
           } />
-          <Route path="/patient-records" element={
-            <ProtectedRoute message="Please log in as a doctor or admin to view patient records">
-              <PatientRecords />
-            </ProtectedRoute>
-          } />
-          <Route path="/patient-records/:patientId" element={
-            <ProtectedRoute message="Please log in as a doctor to view patient details">
-              <DoctorPatientRecordsWrapper />
-            </ProtectedRoute>
-          } />
+
           <Route path="/prescriptions" element={
             <ProtectedRoute message="Please log in to view your prescriptions">
               <ViewPrescriptions />

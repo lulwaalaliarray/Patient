@@ -287,16 +287,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           ),
           action: () => navigate('/past-patients')
         },
-        {
-          title: 'Patient Records',
-          description: 'View comprehensive patient medical history',
-          icon: (
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            </svg>
-          ),
-          action: () => navigate('/patient-records')
-        },
+
         {
           title: 'Write Prescription',
           description: 'Create prescriptions for patients',
@@ -403,16 +394,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           ),
           action: () => navigate('/manage-appointments')
         },
-        {
-          title: 'Patient Records',
-          description: 'View and manage your patient records',
-          icon: (
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-            </svg>
-          ),
-          action: () => navigate('/patient-records')
-        },
+
         {
           title: 'Manage Availability',
           description: 'Set your schedule and manage time off',

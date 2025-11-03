@@ -14,10 +14,21 @@ const ContactPage: React.FC = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // For phone field, only allow numbers, spaces, hyphens, parentheses, and plus sign
+    if (name === 'phone') {
+      const phoneValue = value.replace(/[^0-9\s\-\(\)\+]/g, '');
+      setFormData({
+        ...formData,
+        [name]: phoneValue
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -211,6 +222,15 @@ const ContactPage: React.FC = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  onKeyPress={(e) => {
+                    // Allow numbers, spaces, hyphens, parentheses, plus sign, and control keys
+                    const allowedChars = /[0-9\s\-\(\)\+]/;
+                    const isControlKey = e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' || e.key === 'Enter';
+                    
+                    if (!allowedChars.test(e.key) && !isControlKey) {
+                      e.preventDefault();
+                    }
+                  }}
                   placeholder="+973 XXXX XXXX"
                   style={{
                     width: '100%',

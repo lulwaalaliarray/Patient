@@ -227,7 +227,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookAppointment, onVi
         flexWrap: 'wrap'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
-          {renderStars(realTimeRating || 4.8)}
+          {renderStars(realTimeRating)}
           <span style={{
             fontSize: '14px',
             fontWeight: '500',

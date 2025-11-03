@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { userStorage, User } from '../utils/userStorage';
 import { isLoggedIn } from '../utils/navigation';
 import BookingModal from '../components/Booking/BookingModal';
+import { reviewStorage } from '../utils/reviewStorage';
 
 const DoctorProfilePage: React.FC = () => {
     const { doctorId } = useParams<{ doctorId: string }>();
@@ -16,11 +17,36 @@ const DoctorProfilePage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [userLoggedIn, setUserLoggedIn] = useState(false);
+    const [realTimeRating, setRealTimeRating] = useState<number>(0);
+    const [realTimeReviewCount, setRealTimeReviewCount] = useState<number>(0);
 
     useEffect(() => {
         setUserLoggedIn(isLoggedIn());
         loadDoctorProfile();
+
+        // Listen for review updates
+        const handleReviewUpdate = () => {
+            loadReviewData();
+        };
+
+        window.addEventListener('reviewAdded', handleReviewUpdate);
+        window.addEventListener('reviewUpdated', handleReviewUpdate);
+
+        return () => {
+            window.removeEventListener('reviewAdded', handleReviewUpdate);
+            window.removeEventListener('reviewUpdated', handleReviewUpdate);
+        };
     }, [doctorId]);
+
+    const loadReviewData = () => {
+        if (!doctorId) return;
+        
+        const doctorReviews = reviewStorage.getDoctorReviews(doctorId);
+        const averageRating = reviewStorage.getDoctorAverageRating(doctorId);
+        
+        setRealTimeRating(averageRating || 0);
+        setRealTimeReviewCount(doctorReviews.length || 0);
+    };
 
     const loadDoctorProfile = () => {
         if (!doctorId) {
@@ -44,6 +70,7 @@ const DoctorProfilePage: React.FC = () => {
             }
 
             setDoctor(foundDoctor);
+            loadReviewData();
         } catch (error) {
             console.error('Error loading doctor profile:', error);
             showToast('Error loading doctor profile', 'error');
@@ -250,20 +277,20 @@ const DoctorProfilePage: React.FC = () => {
                                     {/* Rating */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            {renderStars(doctor.rating || 4.8)}
+                                            {renderStars(realTimeRating)}
                                         </div>
                                         <span style={{
                                             fontSize: '16px',
                                             fontWeight: '600',
                                             color: '#374151'
                                         }}>
-                                            {(doctor.rating || 4.8).toFixed(1)}
+                                            {realTimeRating > 0 ? realTimeRating.toFixed(1) : 'N/A'}
                                         </span>
                                         <span style={{
                                             fontSize: '14px',
                                             color: '#6b7280'
                                         }}>
-                                            ({doctor.totalReviews || 127} reviews)
+                                            ({realTimeReviewCount > 0 ? `${realTimeReviewCount} review${realTimeReviewCount !== 1 ? 's' : ''}` : 'No reviews yet'})
                                         </span>
                                     </div>
 
