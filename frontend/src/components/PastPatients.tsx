@@ -119,7 +119,7 @@ const PastPatients: React.FC = () => {
   );
 
   const handleViewPatientDetails = (patientId: string) => {
-    navigate(`/patient-details/${patientId}`);
+    navigate(`/patient-records/${patientId}`);
   };
 
   if (loading) {
